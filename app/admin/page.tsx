@@ -1,41 +1,30 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import AdminDashboard from "@/components/prime-sports/admin-dashboard";
-import AppShell from "@/components/prime-sports/app-shell";
-import PageIntro from "@/components/prime-sports/page-intro";
+import AdminLoginForm from "@/components/prime-sports/admin/admin-login-form";
 
 export const metadata: Metadata = {
-  title: "Admin | Prime Sports",
-  description: "Staff dashboard for master court scheduling and payment verification review.",
+  title: "Admin Login | Prime Sports",
+  description: "Staff access portal for Prime Sports administration.",
 };
 
 export default function AdminPage() {
   return (
-    <AppShell
-      currentPath="/admin"
-      footerSimple
-      containerVariant="wide"
-      headerBadgeLabel="Staff"
-    >
-      <PageIntro
-        eyebrow="Protected Dashboard · Staff"
-        title="Administration"
-        description="[Today's date] · Master calendar & verification queue"
-        containerVariant="wide"
-        sectionClassName="border-b border-border px-0 py-7"
-        layoutClassName="flex w-full flex-wrap items-end justify-between gap-4"
-        titleClassName="font-serif text-[clamp(28px,4vw,40px)] font-bold leading-[1.05] tracking-[-0.02em]"
-        descriptionClassName="mt-1 text-xs opacity-60 tabular-nums"
-        eyebrowClassName="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-accent"
-        actions={
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center justify-center rounded-[var(--radius)] border border-border bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-foreground">
-              Live
-            </span>
-          </div>
-        }
-      />
-      <AdminDashboard />
-    </AppShell>
+    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(120%_140%_at_10%_0%,rgba(212,163,89,0.2)_0%,transparent_45%),linear-gradient(180deg,var(--canvas)_0%,var(--surface-muted)_100%)] px-4 py-10">
+      <section className="w-full max-w-md rounded-[var(--radius)] border border-border bg-surface p-7 shadow-[var(--shadow-md)]">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-accent">Protected Route</p>
+        <h1 className="[font-family:var(--font-heading)] text-3xl font-extrabold uppercase tracking-[0.06em]">Admin Login</h1>
+        <p className="mt-2 text-sm opacity-70">Sign in with your staff credentials to continue to the admin dashboard.</p>
+
+        <AdminLoginForm />
+
+        <div className="mt-5 border-t border-border pt-4 text-xs opacity-65">
+          Looking for the public site?{" "}
+          <Link href="/" className="font-semibold text-accent hover:text-accent-secondary">
+            Go to home
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }
