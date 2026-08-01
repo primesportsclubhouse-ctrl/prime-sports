@@ -5,6 +5,8 @@ export type PrimeNavLink = {
 
 export type ContainerVariant = "default" | "narrow" | "wide";
 
+export type BookingStepStatus = "upcoming" | "current" | "done";
+
 export type SlotSelection = {
   courtIndex: number;
   timeIndex: number;
@@ -28,8 +30,6 @@ export const primeNavLinks: PrimeNavLink[] = [
   { href: "/", label: "Home" },
   { href: "/reserve", label: "Reserve" },
   { href: "/checkout", label: "Checkout" },
-  { href: "/roster", label: "Roster" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export const primeContainerClasses: Record<ContainerVariant, string> = {
@@ -42,8 +42,17 @@ export function getPrimeContainerClassName(variant: ContainerVariant = "default"
   return primeContainerClasses[variant];
 }
 
+export const primeHeadingBaseClass =
+  "[font-family:var(--font-heading)] uppercase tracking-[0.06em]";
+
+export const primeMonoValueClass =
+  "[font-family:var(--font-mono)] font-medium tabular-nums";
+
+export const primeEditorialAccentClass =
+  "[font-family:var(--font-accent),var(--font-display-fallback),serif] italic font-normal";
+
 export const primeButtonBaseClass =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-transparent px-5 text-sm font-semibold whitespace-nowrap transition duration-150 hover:-translate-y-px disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-transparent px-5 text-sm font-medium whitespace-nowrap transition duration-150 hover:-translate-y-px disabled:pointer-events-none disabled:opacity-40";
 
 export const primeButtonPrimaryClass = `${primeButtonBaseClass} bg-accent text-foreground shadow-[var(--shadow-sm)] hover:border-accent-secondary hover:bg-[#b33229] hover:shadow-[var(--shadow-md)]`;
 
@@ -57,7 +66,7 @@ export const primeSectionEyebrowClass =
   "mb-1.5 text-xs font-bold uppercase tracking-[0.14em] text-accent";
 
 export const primeSectionTitleClass =
-  "font-serif text-[clamp(22px,3vw,30px)] font-bold tracking-[-0.01em]";
+  `${primeHeadingBaseClass} text-[clamp(22px,3vw,30px)] font-extrabold leading-[1.08]`;
 
 export const primeSectionHeaderRowClass =
   "mb-6 flex flex-wrap items-end justify-between gap-3";
@@ -78,9 +87,9 @@ export const primeStatusPillBaseClass =
   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em]";
 
 export const primeMetaLabelClass =
-  "mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-muted";
+  "mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted";
 
-export const primePlaceholderClass = "italic font-normal text-muted/55";
+export const primePlaceholderClass = `${primeEditorialAccentClass} text-muted/55`;
 
 export const courtNames = ["Court A", "Court B", "Court C", "Court D"];
 
@@ -138,6 +147,33 @@ export function createOccupiedSlots() {
   });
 
   return occupied;
+}
+
+export function createQrPixelGrid(seed: number, size = 21) {
+  const grid = Array.from({ length: size }, () => Array<boolean>(size).fill(false));
+
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      const hash = (row * 31 + col * 17 + seed * 7) % 5;
+      grid[row][col] = hash < 2;
+    }
+  }
+
+  const stampFinder = (originRow: number, originCol: number) => {
+    for (let row = 0; row < 7; row += 1) {
+      for (let col = 0; col < 7; col += 1) {
+        const isBorder = row === 0 || row === 6 || col === 0 || col === 6;
+        const isCore = row >= 2 && row <= 4 && col >= 2 && col <= 4;
+        grid[originRow + row][originCol + col] = isBorder || isCore;
+      }
+    }
+  };
+
+  stampFinder(0, 0);
+  stampFinder(0, size - 7);
+  stampFinder(size - 7, 0);
+
+  return grid;
 }
 
 export function createAdminBookings() {
