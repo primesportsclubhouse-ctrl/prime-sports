@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import AppShell from "@/components/prime-sports/app-shell";
-import CheckoutClient from "@/components/prime-sports/checkout-client";
-import PageIntro from "@/components/prime-sports/page-intro";
+import AppShell from "@/components/prime-sports/layout/app-shell";
+import CheckoutClient from "@/components/prime-sports/booking/checkout-client";
+import PageIntro from "@/components/prime-sports/booking/page-intro";
 
 export const metadata: Metadata = {
   title: "Checkout | Prime Sports",
