@@ -24,7 +24,7 @@ export default function PageIntro({
   sectionClassName = "border-b border-border px-0 py-12",
   layoutClassName,
   eyebrowClassName = "mb-3 text-xs font-bold uppercase tracking-[0.14em] text-accent",
-  titleClassName = "font-serif text-[clamp(36px,6vw,56px)] font-bold leading-[1.05] tracking-[-0.02em]",
+  titleClassName = "[font-family:var(--font-heading)] text-[clamp(36px,6vw,56px)] font-extrabold uppercase leading-[1.05] tracking-[0.06em]",
   descriptionClassName = "mt-3 max-w-[60ch] text-base opacity-70",
   actions,
   centered = false,
