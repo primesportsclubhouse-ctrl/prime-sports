@@ -31,7 +31,7 @@ export default function SiteFooter({
       <div className={containerClassName}>
         <div className="mb-8 grid grid-cols-[2fr_1fr_1fr] gap-8 max-[920px]:grid-cols-1">
           <div>
-            <div className="mb-2 inline-flex items-baseline gap-1 font-serif text-2xl font-bold tracking-[-0.015em]">
+            <div className="mb-2 inline-flex items-baseline gap-1 [font-family:var(--font-heading)] text-2xl font-extrabold uppercase tracking-[0.06em]">
               Prime Sports<span className="text-accent">.</span>
             </div>
             <p className="max-w-[40ch] text-[13px] opacity-60">
@@ -40,7 +40,7 @@ export default function SiteFooter({
             </p>
           </div>
           <div>
-            <h5 className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] opacity-55">Platform</h5>
+            <h5 className="mb-3 [font-family:var(--font-heading)] text-[11px] font-extrabold uppercase tracking-[0.08em] opacity-55">Platform</h5>
             <ul className="flex list-none flex-col gap-2 p-0">
               {primeNavLinks.map((link) => (
                 <li key={link.href}>
@@ -56,7 +56,7 @@ export default function SiteFooter({
             </ul>
           </div>
           <div>
-            <h5 className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] opacity-55">Club</h5>
+            <h5 className="mb-3 [font-family:var(--font-heading)] text-[11px] font-extrabold uppercase tracking-[0.08em] opacity-55">Club</h5>
             <ul className="flex list-none flex-col gap-2 p-0">
               <li>
                 <Link href="/#pricing" className="text-[13px] opacity-70 transition hover:opacity-100">

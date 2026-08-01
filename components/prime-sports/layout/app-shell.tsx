@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 
-import SiteFooter from "@/components/prime-sports/site-footer";
-import SiteHeader from "@/components/prime-sports/site-header";
+import SiteFooter from "@/components/prime-sports/layout/site-footer";
+import SiteHeader from "@/components/prime-sports/layout/site-header";
 import { ContainerVariant } from "@/lib/prime-sports";
 
 type AppShellProps = {
@@ -9,7 +9,6 @@ type AppShellProps = {
   children: ReactNode;
   footerSimple?: boolean;
   containerVariant?: ContainerVariant;
-  headerBadgeLabel?: string;
 };
 
 export default function AppShell({
@@ -17,7 +16,6 @@ export default function AppShell({
   children,
   footerSimple = false,
   containerVariant = "default",
-  headerBadgeLabel,
 }: AppShellProps) {
   return (
     <div className="min-h-screen">
@@ -25,7 +23,6 @@ export default function AppShell({
         <SiteHeader
           currentPath={currentPath}
           containerVariant={containerVariant}
-          badgeLabel={headerBadgeLabel}
         />
         <main className="flex-1">{children}</main>
         <SiteFooter

@@ -25,7 +25,7 @@ export default function SectionIntro({
       <span className="mb-3 inline-block text-xs font-bold uppercase tracking-[0.14em] text-accent">
         {eyebrow}
       </span>
-      <h2 className="font-serif text-[clamp(32px,5vw,52px)] font-bold leading-[1.05] tracking-[-0.02em]">
+      <h2 className="[font-family:var(--font-heading)] text-[clamp(32px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[0.06em]">
         {title}
       </h2>
       {description ? <p className="mt-3.5 text-base leading-[1.6] opacity-70">{description}</p> : null}
