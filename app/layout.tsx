@@ -9,6 +9,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 
+import { ReservationProvider } from "@/components/prime-sports/booking/reservation-provider";
 import { ToastProvider } from "@/components/prime-sports/toast/toast-provider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -65,7 +66,9 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${inter.variable} ${montserrat.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${playfairDisplay.variable}`}
     >
       <body>
-        <ToastProvider>{children}</ToastProvider>
+        <ReservationProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ReservationProvider>
       </body>
     </html>
   );

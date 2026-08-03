@@ -17,6 +17,12 @@
   --shadow-sm: 0 10px 24px rgba(2, 8, 18, 0.18);
   --shadow-md: 0 18px 40px rgba(2, 8, 18, 0.24);
   --shadow-lg: 0 28px 60px rgba(2, 8, 18, 0.32);
+
+  /* Survey backdrops — the drawn lines and the glint that travels along them. */
+  --survey-line: color-mix(in srgb, var(--foreground) 11%, transparent);
+  --survey-line-soft: color-mix(in srgb, var(--foreground) 8%, transparent);
+  --survey-glint: color-mix(in srgb, var(--foreground) 60%, transparent);
+  --survey-glint-soft: color-mix(in srgb, var(--foreground) 28%, transparent);
 }
 
 @theme inline {
@@ -203,5 +209,67 @@
 
   .faq-meter {
     transform: scaleX(1);
+  }
+}
+
+/* Survey backdrop motion primitives (see components/prime-sports/ui/section-backdrop.tsx)
+   Every glint travels in whole multiples of its own pattern's spacing — driven by a
+   steps() timing function — so a shining line always lands exactly on a drawn line
+   rather than floating somewhere between two of them. */
+@keyframes survey-glint-x {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(var(--survey-grid) * var(--glint-steps)), 0, 0);
+  }
+}
+
+@keyframes survey-glint-y {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, calc(var(--survey-grid) * var(--glint-steps)), 0);
+  }
+}
+
+/* One line brightens, holds, fades, then stays dark for the rest of the cycle, so at
+   any moment only a couple of the glints in a backdrop are actually lit. The ramps are
+   deliberately long and the dark gap is the largest phase — this should read as a slow
+   breath, never as a blink. A glint's step animation runs for exactly one pulse per
+   step, so it only ever changes line while sitting at opacity 0. */
+@keyframes survey-glint-pulse {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  38% {
+    opacity: 1;
+  }
+  56% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Spokes sweep in 12deg increments to match the conic gradient beneath them. */
+@keyframes survey-spoke-sweep {
+  from {
+    transform: rotate(var(--glint-from));
+  }
+  to {
+    transform: rotate(calc(var(--glint-from) + 360deg));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .survey-glint {
+    animation: none;
+    opacity: 0.22;
   }
 }

@@ -7,14 +7,14 @@ import { ContainerVariant } from "@/lib/prime-sports";
 type AppShellProps = {
   currentPath: string;
   children: ReactNode;
-  footerSimple?: boolean;
+  simple?: boolean;
   containerVariant?: ContainerVariant;
 };
 
 export default function AppShell({
   currentPath,
   children,
-  footerSimple = false,
+  simple = false,
   containerVariant = "default",
 }: AppShellProps) {
   return (
@@ -23,11 +23,12 @@ export default function AppShell({
         <SiteHeader
           currentPath={currentPath}
           containerVariant={containerVariant}
+          simple={simple}
         />
         <main className="flex-1">{children}</main>
         <SiteFooter
           currentPath={currentPath}
-          simple={footerSimple}
+          simple={simple}
           containerVariant={containerVariant}
         />
       </div>

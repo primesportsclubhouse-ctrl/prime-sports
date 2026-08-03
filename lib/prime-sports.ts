@@ -93,6 +93,12 @@ export const primePlaceholderClass = `${primeEditorialAccentClass} text-muted/55
 
 export const courtNames = ["Court A", "Court B", "Court C", "Court D"];
 
+export const courtRates = [1200, 1200, 1500, 1500];
+
+export function formatCurrency(amount: number) {
+  return `₱${amount.toLocaleString("en-PH")}`;
+}
+
 export const timeSlots = [
   "09:00",
   "10:00",
