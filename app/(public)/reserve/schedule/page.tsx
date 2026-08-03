@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function ReserveSchedulePage() {
   return (
-    <AppShell currentPath="/reserve/schedule" footerSimple>
+    <AppShell currentPath="/reserve/schedule" simple>
       <PageIntro
         eyebrow="Step 02 — 04 · Reservation"
         title="Reserve a Court"

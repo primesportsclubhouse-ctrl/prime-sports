@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function CheckoutPage() {
   return (
-    <AppShell currentPath="/checkout" footerSimple>
+    <AppShell currentPath="/checkout" simple>
       <PageIntro
         eyebrow="Step 04 — 04 · Scan-to-Pay"
         title="Confirm Your Reservation"

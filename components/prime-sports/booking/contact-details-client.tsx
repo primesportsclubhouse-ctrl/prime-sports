@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import BookingSteps from "@/components/prime-sports/booking/booking-steps";
+import { useReservation } from "@/components/prime-sports/booking/reservation-provider";
 import { useToast } from "@/components/prime-sports/toast/toast-provider";
 import {
   BookingStepStatus,
@@ -23,6 +24,7 @@ const labelClassName = "mb-1.5 block text-[11px] font-bold uppercase tracking-[0
 export default function ContactDetailsClient() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { setContact } = useReservation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -38,6 +40,7 @@ export default function ContactDetailsClient() {
       return;
     }
 
+    setContact({ fullName: fullName.trim(), email: email.trim(), phone: phone.trim() });
     showToast({
       title: "Details saved",
       description: `${fullName.trim()} · continue to pick a date and court.`,

@@ -7,6 +7,7 @@ import HalideTopoHero from "@/components/prime-sports/home/halide-topo-hero";
 import HomeFaq, { type FaqItem } from "@/components/prime-sports/home/home-faq";
 import LocationPanel from "@/components/prime-sports/home/location-panel";
 import SectionIntro from "@/components/prime-sports/home/section-intro";
+import SectionBackdrop from "@/components/prime-sports/ui/section-backdrop";
 import {
   primeButtonLargeClass,
   primeButtonPrimaryClass,
@@ -84,8 +85,10 @@ export default function Home() {
     <AppShell currentPath="/">
           <HalideTopoHero />
 
-          <section className="scroll-mt-28 border-b border-border px-0 py-20 max-[640px]:py-12" id="pricing" data-od-id="landing-pricing">
-            <div className={containerClassName}>
+          {/* Section 2 — an "off" section: grain only, no linework. */}
+          <section className="relative scroll-mt-28 overflow-hidden border-b border-border px-0 py-20 max-[640px]:py-12" id="pricing" data-od-id="landing-pricing">
+            <SectionBackdrop variant="grain" />
+            <div className={`${containerClassName} relative z-10`}>
               <SectionIntro
                 eyebrow="Court Pricing"
                 title="Transparent rates by surface & time of day."
@@ -164,8 +167,10 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="scroll-mt-28 border-b border-border px-0 py-20 max-[640px]:py-12" id="facility" data-od-id="landing-facility">
-            <div className={containerClassName}>
+          {/* Section 3 — backdrop alternates to the stellar style. */}
+          <section className="relative scroll-mt-28 overflow-hidden border-b border-border px-0 py-20 max-[640px]:py-12" id="facility" data-od-id="landing-facility">
+            <SectionBackdrop variant="stellar" />
+            <div className={`${containerClassName} relative z-10`}>
               <SectionIntro
                 eyebrow="The Facility"
                 title="A club worth the visit."
@@ -176,8 +181,10 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="border-b border-border px-0 py-20 max-[640px]:py-12" data-od-id="landing-faq">
-            <div className={containerClassName}>
+          {/* Section 4 — an "off" section: grain only, no linework. */}
+          <section className="relative overflow-hidden border-b border-border px-0 py-20 max-[640px]:py-12" data-od-id="landing-faq">
+            <SectionBackdrop variant="grain" />
+            <div className={`${containerClassName} relative z-10`}>
               <SectionIntro
                 eyebrow="Frequently Asked"
                 title="Answers before you ask."
@@ -200,8 +207,10 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="border-t border-border bg-[linear-gradient(135deg,var(--surface)_0%,var(--canvas)_100%)] px-0 py-16 text-foreground" data-od-id="landing-cta">
-            <div className={`${containerClassName} flex flex-wrap items-center justify-between gap-6`}>
+          {/* Section 5 — back to the grid style. */}
+          <section className="relative overflow-hidden border-t border-border bg-[linear-gradient(135deg,var(--surface)_0%,var(--canvas)_100%)] px-0 py-16 text-foreground" data-od-id="landing-cta">
+            <SectionBackdrop variant="grid" />
+            <div className={`${containerClassName} relative z-10 flex flex-wrap items-center justify-between gap-6`}>
               <div>
                 <h2 className="max-w-[14ch] [font-family:var(--font-heading)] text-[clamp(28px,4vw,42px)] font-extrabold uppercase leading-[1.1] tracking-[0.06em]">Your court is waiting.</h2>
                 <p className="mt-2 text-[15px] opacity-65">Reserve in under two minutes. Pay your way. Show up &amp; play.</p>

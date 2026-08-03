@@ -4,11 +4,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import BookingSteps from "@/components/prime-sports/booking/booking-steps";
+import { useReservation } from "@/components/prime-sports/booking/reservation-provider";
 import { useToast } from "@/components/prime-sports/toast/toast-provider";
 import {
   BookingStepStatus,
   courtNames,
+  courtRates,
   createOccupiedSlots,
+  formatCurrency,
   formatPrimeDate,
   getWeekStart,
   monthNames,
@@ -30,6 +33,7 @@ const occupiedSlots = createOccupiedSlots();
 export default function BookingClient() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { setSchedule } = useReservation();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -221,7 +225,11 @@ export default function BookingClient() {
             <div>
               <dt className={primeMetaLabelClass}>Rate</dt>
               <dd className="m-0 text-[15px] [font-family:var(--font-mono)] font-semibold tabular-nums">
-                <span className={primePlaceholderClass}>[Rate]</span>
+                {selectedSlot ? (
+                  `${formatCurrency(courtRates[selectedSlot.courtIndex])} / hr`
+                ) : (
+                  <span className={primePlaceholderClass}>[Select a slot]</span>
+                )}
               </dd>
             </div>
           </dl>
@@ -231,6 +239,15 @@ export default function BookingClient() {
             aria-disabled={!isReady}
             disabled={!isReady}
             onClick={() => {
+              if (!selectedDay || !selectedSlot) {
+                return;
+              }
+
+              setSchedule({
+                date: selectedDay,
+                courtIndex: selectedSlot.courtIndex,
+                timeIndex: selectedSlot.timeIndex,
+              });
               showToast({
                 title: "Schedule confirmed",
                 description: "Proceeding to payment.",
