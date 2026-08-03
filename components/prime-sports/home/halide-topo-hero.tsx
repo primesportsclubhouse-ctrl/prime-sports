@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, type CSSProperties, type PointerEvent } from "react";
 
 import courtPlate from "@/public/prime-sports/prime-core-court.jpeg";
+import SectionBackdrop from "@/components/prime-sports/ui/section-backdrop";
+import SkewCta from "@/components/prime-sports/ui/skew-cta";
 import {
   getPrimeContainerClassName,
   primeHeadingBaseClass,
@@ -34,6 +35,61 @@ const RELEASE_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 /** Easing/transition for the tracked image plate. */
 const layerTransition = "transform var(--tilt-ms) var(--tilt-ease)";
+
+/**
+ * The plate's perspective matrix, defined once so the CSS below and the JS that
+ * inverts it (to place the glare) can never drift out of sync.
+ */
+const PLATE_ROLL_DEG = -21;
+const PLATE_SCALE = 1.03;
+const TILT_X_DEG = -17;
+const TILT_Y_DEG = 23;
+const DRIFT_X_PX = 26;
+const DRIFT_Y_PX = 18;
+
+const plateTransform = [
+  `translate3d(calc(var(--mx) * ${DRIFT_X_PX}px), calc(var(--my) * ${DRIFT_Y_PX}px), 0)`,
+  `rotateX(calc(var(--my) * ${TILT_X_DEG}deg))`,
+  `rotateY(calc(var(--mx) * ${TILT_Y_DEG}deg))`,
+  `rotateZ(${PLATE_ROLL_DEG}deg)`,
+  `scale(${PLATE_SCALE})`,
+].join(" ");
+
+const ROLL_COS = Math.cos((PLATE_ROLL_DEG * Math.PI) / 180);
+const ROLL_SIN = Math.sin((PLATE_ROLL_DEG * Math.PI) / 180);
+
+/**
+ * Invert the plate transform for a viewport point, returning where that point falls in
+ * the plate's own untransformed box (as a 0-100 percentage on each axis). Without this
+ * the glare would be painted inside the rolled/tilted layer using unrolled coordinates,
+ * so it would sit some distance away from the actual cursor.
+ *
+ * `frame` is the plate frame's rect — that element only ever translates, so its size is
+ * the untransformed plate size and its centre is the inner layer's transform origin.
+ */
+function projectOntoPlate(
+  clientX: number,
+  clientY: number,
+  frame: DOMRect,
+  mx: number,
+  my: number,
+) {
+  // rotateX/rotateY foreshorten the local axes; near enough to their cosine here.
+  const foreshortenY = Math.cos((my * TILT_X_DEG * Math.PI) / 180);
+  const foreshortenX = Math.cos((mx * TILT_Y_DEG * Math.PI) / 180);
+
+  const dx = clientX - (frame.left + frame.width / 2) - mx * DRIFT_X_PX;
+  const dy = clientY - (frame.top + frame.height / 2) - my * DRIFT_Y_PX;
+
+  const determinant = PLATE_SCALE * foreshortenX * foreshortenY;
+  const localX = (foreshortenY * ROLL_COS * dx + foreshortenX * ROLL_SIN * dy) / determinant;
+  const localY = (-foreshortenY * ROLL_SIN * dx + foreshortenX * ROLL_COS * dy) / determinant;
+
+  return {
+    gx: ((localX + frame.width / 2) / frame.width) * 100,
+    gy: ((localY + frame.height / 2) / frame.height) * 100,
+  };
+}
 
 /**
  * The court's playing surface as an affine plane over the plate box, measured off the
@@ -289,24 +345,20 @@ export default function HalideTopoHero({
       const ratioX = (event.clientX - bounds.left) / bounds.width;
       const ratioY = (event.clientY - bounds.top) / bounds.height;
 
-      // The glare, however, must line up with the actual cursor position on the
-      // plate itself, not the section — otherwise it drifts once the plate is
-      // shifted or scaled away from the stage's center.
-      const plateBounds = plateBoundsRef.current ?? plateRef.current?.getBoundingClientRect() ?? bounds;
-      plateBoundsRef.current = plateBounds;
-      const plateRatioX = plateBounds.width
-        ? (event.clientX - plateBounds.left) / plateBounds.width
-        : ratioX;
-      const plateRatioY = plateBounds.height
-        ? (event.clientY - plateBounds.top) / plateBounds.height
-        : ratioY;
+      const mx = Math.min(Math.max(ratioX * 2 - 1, -1), 1);
+      const my = Math.min(Math.max(ratioY * 2 - 1, -1), 1);
 
-      pointerRef.current = {
-        mx: Math.min(Math.max(ratioX * 2 - 1, -1), 1),
-        my: Math.min(Math.max(ratioY * 2 - 1, -1), 1),
-        gx: plateRatioX * 100,
-        gy: plateRatioY * 100,
-      };
+      // The glare, though, is painted inside the rolled and tilted layer, so the cursor
+      // has to be projected back into that layer's own space to land under the pointer.
+      const plateBounds = plateBoundsRef.current ?? plateRef.current?.getBoundingClientRect() ?? null;
+      plateBoundsRef.current = plateBounds;
+
+      const glare =
+        plateBounds && plateBounds.width && plateBounds.height
+          ? projectOntoPlate(event.clientX, event.clientY, plateBounds, mx, my)
+          : { gx: ratioX * 100, gy: ratioY * 100 };
+
+      pointerRef.current = { mx, my, gx: glare.gx, gy: glare.gy };
 
       stage.style.setProperty("--tilt-ms", TRACK_MS);
       stage.style.setProperty("--tilt-ease", TRACK_EASE);
@@ -343,11 +395,8 @@ export default function HalideTopoHero({
       }
       data-od-id="halide-topo-hero"
     >
-      {/* Survey grid — static backdrop texture */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-60 [background-image:linear-gradient(90deg,rgba(245,239,230,0.11)_1px,transparent_1px),linear-gradient(rgba(245,239,230,0.11)_1px,transparent_1px)] [background-size:72px_72px] max-[640px]:[background-size:44px_44px]"
-      />
+      {/* Section 1 of the alternating backdrop rhythm — the orthogonal grid style. */}
+      <SectionBackdrop variant="grid" />
 
       {/* Tilted image plate — cursor-aware perspective matrix over its fixed Z-roll.
           preserve-3d is required here so the plate inherits the section's perspective.
@@ -356,9 +405,9 @@ export default function HalideTopoHero({
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
         <div
           ref={plateRef}
-          className="relative aspect-[16/9] w-[min(1120px,86vw)] [--plate-shift:20%] [transform-style:preserve-3d] max-[900px]:[--plate-shift:10%] max-[640px]:w-[124vw] max-[640px]:[--plate-shift:0%]"
+          className="relative aspect-[16/9] w-[min(1120px,86vw)] [--plate-drop:0%] [--plate-shift:28%] [transform-style:preserve-3d] max-[900px]:[--plate-shift:16%] max-[640px]:w-[124vw] max-[640px]:[--plate-drop:10%] max-[640px]:[--plate-shift:0%]"
           style={{
-            transform: "translateX(var(--plate-shift))",
+            transform: "translate(var(--plate-shift), var(--plate-drop))",
             transition: layerTransition,
           }}
         >
@@ -367,8 +416,7 @@ export default function HalideTopoHero({
           <div
             className="absolute inset-0 border border-foreground/15 shadow-[var(--shadow-lg)]"
             style={{
-              transform:
-                "translate3d(calc(var(--mx) * 26px), calc(var(--my) * 18px), 0) rotateX(calc(var(--my) * -17deg)) rotateY(calc(var(--mx) * 23deg)) rotateZ(-21deg) scale(1.03)",
+              transform: plateTransform,
               transition: layerTransition,
               willChange: "transform",
             }}
@@ -467,7 +515,9 @@ export default function HalideTopoHero({
        
         </div>
 
-        <div className="flex items-center">
+        {/* Vertically centred on wide screens; pinned to the top on phones so the
+            headline clears the court plate instead of sitting on top of it. */}
+        <div className="flex items-center max-[640px]:items-start">
           <h1 className={`${primeHeadingBaseClass} text-[clamp(56px,13vw,168px)] font-extrabold leading-[0.86] tracking-[0.02em] text-foreground [text-shadow:0_18px_48px_rgba(2,8,18,0.45)]`}>
             {headlineTop}
             <br />
@@ -481,19 +531,7 @@ export default function HalideTopoHero({
             <span className="block">{caption}</span>
           </div>
 
-          <Link
-            href={ctaHref}
-            className="group relative inline-flex min-h-12 skew-x-[-11deg] items-center justify-center overflow-hidden bg-foreground px-8 text-canvas transition-colors duration-300 ease-out [clip-path:polygon(0_0,calc(100%-16px)_0,100%_16px,100%_100%,0_100%)] hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-secondary max-[640px]:min-h-11 max-[640px]:px-6"
-          >
-            <span className="skew-x-[11deg] text-[13px] font-bold uppercase tracking-[0.16em]">
-              {ctaLabel}
-            </span>
-            {/* Folded-corner / ribbon detail */}
-            <span
-              aria-hidden="true"
-              className="absolute right-0 top-0 size-4 bg-canvas/25 transition-colors duration-300 ease-out [clip-path:polygon(0_0,0_100%,100%_100%)] group-hover:bg-foreground/30"
-            />
-          </Link>
+          <SkewCta href={ctaHref}>{ctaLabel}</SkewCta>
         </div>
       </div>
     </section>
