@@ -23,7 +23,6 @@ type FaqMonochromeProps = {
 
 export function FaqMonochrome({
   items,
-  badgeLabel = "Signal FAQ",
   defaultOpenIndex = 0,
   className,
   id,
@@ -45,24 +44,6 @@ export function FaqMonochrome({
 
   return (
     <div id={id} className={cn("mx-auto flex w-full max-w-[860px] scroll-mt-28 flex-col gap-8", className)}>
-      {badgeLabel ? (
-        <div className="faq-reveal relative mx-auto flex w-full max-w-[24rem] items-center gap-3.5 overflow-hidden rounded-full border border-border bg-surface/60 px-5 py-3 text-accent-secondary shadow-[var(--shadow-sm)] backdrop-blur-sm">
-          <span className="faq-beam pointer-events-none absolute -inset-[110%] rounded-full opacity-60" aria-hidden="true" />
-          <span
-            className="faq-ring pointer-events-none absolute -inset-[110%] rounded-full border border-current opacity-25"
-            aria-hidden="true"
-          />
-          <span className="relative z-10 text-[10px] font-bold uppercase tracking-[0.32em] [font-family:var(--font-heading)] max-[420px]:tracking-[0.2em]">
-            {badgeLabel}
-          </span>
-          <span className="faq-meter relative z-10 h-px flex-1 opacity-70" aria-hidden="true" />
-          <span
-            className="faq-tick relative z-10 size-2 shrink-0 rounded-full bg-current shadow-[0_0_0_4px_rgba(212,163,89,0.12)]"
-            aria-hidden="true"
-          />
-        </div>
-      ) : null}
-
       <ul className="flex flex-col gap-3.5">
         {items.map((item, index) => {
           const open = openIndex === index;

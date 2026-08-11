@@ -7,5 +7,5 @@ type HomeFaqProps = {
 };
 
 export default function HomeFaq({ items }: HomeFaqProps) {
-  return <FaqMonochrome id="faq" items={items} badgeLabel="Court Desk FAQ" />;
+  return <FaqMonochrome id="faq" items={items}  />;
 }
