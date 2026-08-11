@@ -6,38 +6,12 @@ import FacilityShowcase from "@/components/prime-sports/home/facility-showcase";
 import HalideTopoHero from "@/components/prime-sports/home/halide-topo-hero";
 import HomeFaq, { type FaqItem } from "@/components/prime-sports/home/home-faq";
 import LocationPanel from "@/components/prime-sports/home/location-panel";
+import PricingCards from "@/components/prime-sports/home/pricing-cards";
 import SectionIntro from "@/components/prime-sports/home/section-intro";
 import SectionBackdrop from "@/components/prime-sports/ui/section-backdrop";
 import {
-  primeButtonLargeClass,
-  primeButtonPrimaryClass,
   primeContainerClasses,
 } from "@/lib/prime-sports";
-
-const modules = [
-  {
-    href: "/",
-    number: "01",
-    title: "Marketing Frontend",
-    description:
-      "Editorial homepage — hero, court pricing grid, facility gallery, and FAQ accordion.",
-    dark: true,
-  },
-  {
-    href: "/reserve",
-    number: "02",
-    title: "Booking System",
-    description:
-      "Rolling week calendar, court selection grid, and live hourly time-slot states.",
-  },
-  {
-    href: "/checkout",
-    number: "03",
-    title: "Scan-to-Pay Checkout",
-    description:
-      "QR payment panels, drag-and-drop receipt upload with OCR, and reference validation.",
-  },
-];
 
 const faqItems: FaqItem[] = [
   {
@@ -73,7 +47,7 @@ const faqItems: FaqItem[] = [
 ];
 
 export const metadata: Metadata = {
-  title: "Prime Sports",
+  title: "PrimeSports Clubhouse",
   description:
     "Marketing overview and module launcher for the Prime Sports court reservation platform.",
 };
@@ -85,90 +59,22 @@ export default function Home() {
     <AppShell currentPath="/">
           <HalideTopoHero />
 
-          {/* Section 2 — an "off" section: grain only, no linework. */}
-          <section className="relative scroll-mt-28 overflow-hidden border-b border-border px-0 py-20 max-[640px]:py-12" id="pricing" data-od-id="landing-pricing">
+          {/* Section 2 — cream variant: grain only, no linework, inverted ink. */}
+          <section className="relative scroll-mt-28 overflow-hidden border-b border-border bg-foreground px-0 py-20 text-canvas max-[640px]:py-12" id="pricing" data-od-id="landing-pricing" data-nav-theme="light">
             <SectionBackdrop variant="grain" />
             <div className={`${containerClassName} relative z-10`}>
               <SectionIntro
                 eyebrow="Court Pricing"
                 title="Transparent rates by surface & time of day."
-                description="Daytime rates apply [time range]. Evening rates apply [time range]. All sessions are booked in hourly increments."
+                description="Daytime runs 6:00 AM – 4:00 PM and nighttime runs 4:00 PM – 2:00 AM, with separate weekday and weekend rates. Toggle below to compare — all sessions are booked in hourly increments."
                 className="mb-10"
               />
-              <div className="grid grid-cols-2 gap-5 max-[920px]:grid-cols-1">
-                <div className="overflow-hidden rounded-[var(--radius)] border border-border border-t-2 border-t-accent-secondary bg-surface text-foreground shadow-[var(--shadow-md)]" data-od-id="pricing-covered">
-                  <div className="border-b border-border px-7 py-7 pb-5 max-[640px]:px-5 max-[640px]:pb-4 max-[640px]:pt-5">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-60">Premium Indoor</span>
-                    <h3 className="mt-2 [font-family:var(--font-heading)] text-[28px] font-extrabold uppercase tracking-[0.06em]">Covered Courts</h3>
-                    <p className="mt-1.5 text-[13px] opacity-60">
-                      Climate-controlled, professional-grade surfaces with gallery seating.
-                    </p>
-                  </div>
-                  <div>
-                    <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border px-7 py-4.5 max-[640px]:px-5">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold">Daytime Rate</span>
-                        <span className="[font-family:var(--font-mono)] text-xs font-medium opacity-55 tabular-nums">[Time range] · Off-peak</span>
-                      </div>
-                      <div className="[font-family:var(--font-mono)] text-2xl font-semibold tabular-nums">
-                        [Rate]
-                        <span className="[font-family:var(--font-mono)] text-[13px] font-medium opacity-55 tabular-nums">/hr</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-[1fr_auto] items-center gap-4 px-7 py-4.5 max-[640px]:px-5">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold">Evening Rate</span>
-                        <span className="[font-family:var(--font-mono)] text-xs font-medium opacity-55 tabular-nums">[Time range] · Peak</span>
-                      </div>
-                      <div className="[font-family:var(--font-mono)] text-2xl font-semibold tabular-nums">
-                        [Rate]
-                        <span className="[font-family:var(--font-mono)] text-[13px] font-medium opacity-55 tabular-nums">/hr</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t border-border px-7 py-[18px] pb-6 text-xs opacity-55 max-[640px]:px-5">
-                    Includes [N] courts · [Surface type] · [Amenities]
-                  </div>
-                </div>
-
-                <div className="overflow-hidden rounded-[var(--radius)] border border-border border-t-2 border-t-accent bg-surface text-foreground shadow-[var(--shadow-md)]" data-od-id="pricing-outdoor">
-                  <div className="border-b border-border px-7 py-7 pb-5 max-[640px]:px-5 max-[640px]:pb-4 max-[640px]:pt-5">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-60">Open-Air Championship</span>
-                    <h3 className="mt-2 [font-family:var(--font-heading)] text-[28px] font-extrabold uppercase tracking-[0.06em]">Outdoor Courts</h3>
-                    <p className="mt-1.5 text-[13px] opacity-60">Open-air, championship-spec surfaces under [lighting/condition].</p>
-                  </div>
-                  <div>
-                    <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border px-7 py-4.5 max-[640px]:px-5">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold">Daytime Rate</span>
-                        <span className="[font-family:var(--font-mono)] text-xs font-medium opacity-55 tabular-nums">[Time range] · Off-peak</span>
-                      </div>
-                      <div className="[font-family:var(--font-mono)] text-2xl font-semibold tabular-nums">
-                        [Rate]
-                        <span className="[font-family:var(--font-mono)] text-[13px] font-medium opacity-55 tabular-nums">/hr</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-[1fr_auto] items-center gap-4 px-7 py-4.5 max-[640px]:px-5">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold">Evening Rate</span>
-                        <span className="[font-family:var(--font-mono)] text-xs font-medium opacity-55 tabular-nums">[Time range] · Peak</span>
-                      </div>
-                      <div className="[font-family:var(--font-mono)] text-2xl font-semibold tabular-nums">
-                        [Rate]
-                        <span className="[font-family:var(--font-mono)] text-[13px] font-medium opacity-55 tabular-nums">/hr</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t border-border px-7 py-[18px] pb-6 text-xs opacity-55 max-[640px]:px-5">
-                    Includes [N] courts · [Surface type] · [Amenities]
-                  </div>
-                </div>
-              </div>
+              <PricingCards />
             </div>
           </section>
 
           {/* Section 3 — backdrop alternates to the stellar style. */}
-          <section className="relative scroll-mt-28 overflow-hidden border-b border-border px-0 py-20 max-[640px]:py-12" id="facility" data-od-id="landing-facility">
+          <section className="relative scroll-mt-28 overflow-hidden border-b border-border px-0 py-20 max-[640px]:py-12" id="facility" data-od-id="landing-facility" data-nav-theme="dark">
             <SectionBackdrop variant="stellar" />
             <div className={`${containerClassName} relative z-10`}>
               <SectionIntro
@@ -181,8 +87,8 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Section 4 — an "off" section: grain only, no linework. */}
-          <section className="relative overflow-hidden border-b border-border px-0 py-20 max-[640px]:py-12" data-od-id="landing-faq">
+          {/* Section 4 — cream variant: grain only, no linework, inverted ink. */}
+          <section className="relative overflow-hidden border-b border-border bg-foreground px-0 py-20 text-canvas max-[640px]:py-12" data-od-id="landing-faq" data-nav-theme="light">
             <SectionBackdrop variant="grain" />
             <div className={`${containerClassName} relative z-10`}>
               <SectionIntro
@@ -195,12 +101,12 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="scroll-mt-28 border-b border-border px-0 py-20 max-[640px]:py-12" id="location" data-od-id="landing-location">
+          <section className="scroll-mt-28 border-b border-border px-0 py-20 max-[640px]:py-12" id="location" data-od-id="landing-location" data-nav-theme="dark">
             <div className={containerClassName}>
               <SectionIntro
                 eyebrow="Location"
                 title="Find us."
-                description="The facility is located at [address snippet] with [parking/access notes]."
+                description="The clubhouse sits along the highway in Minglanilla, Cebu. Open daily with on-site parking."
                 className="mb-10"
               />
               <LocationPanel />
@@ -208,12 +114,12 @@ export default function Home() {
           </section>
 
           {/* Section 5 — back to the grid style. */}
-          <section className="relative overflow-hidden border-t border-border bg-[linear-gradient(135deg,var(--surface)_0%,var(--canvas)_100%)] px-0 py-16 text-foreground" data-od-id="landing-cta">
+          <section className="relative overflow-hidden border-t border-border bg-[linear-gradient(135deg,var(--surface)_0%,var(--canvas)_100%)] px-0 py-16 text-foreground" data-od-id="landing-cta" data-nav-theme="dark">
             <SectionBackdrop variant="grid" />
             <div className={`${containerClassName} relative z-10 flex flex-wrap items-center justify-between gap-6`}>
               <div>
                 <h2 className="max-w-[14ch] [font-family:var(--font-heading)] text-[clamp(28px,4vw,42px)] font-extrabold uppercase leading-[1.1] tracking-[0.06em]">Your court is waiting.</h2>
-                <p className="mt-2 text-[15px] opacity-65">Reserve in under two minutes. Pay your way. Show up &amp; play.</p>
+                <p className="mt-2 text-[15px] opacity-65">Reserve in under few minutes. Pay your way. Show up &amp; play.</p>
               </div>
               <Link
                 href="/reserve"

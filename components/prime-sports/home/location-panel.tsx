@@ -1,69 +1,49 @@
-import { CircleParking, Clock, MapPin, Route } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
+
+const MAPS_EMBED_SRC = "https://www.google.com/maps?q=PrimeSports+Clubhouse+Minglanilla&ll=10.2417885,123.7835417&z=17&output=embed";
+
+const MAPS_DIRECTIONS_HREF =
+  "https://www.google.com/maps/place/PrimeSports+Clubhouse+Minglanilla/@10.2417885,123.7835417,17z/data=!3m1!4b1!4m6!3m5!1s0x33a9775301240a8d:0xf552455d471f4cce!8m2!3d10.2417885!4d123.7835417!16s%2Fg%2F11npy8qgzh";
 
 const details = [
   {
     id: "address",
     icon: MapPin,
     label: "Address",
-    value: "[Facility address line 1]",
-    note: "[Address line 2] · [City] [Postal]",
+    value: "Highway, Minglanilla",
+    note: "Cebu, 6064",
   },
   {
     id: "hours",
     icon: Clock,
     label: "Opening Hours",
-    value: "[Open]–[Close]",
-    note: "Open daily · Last slot starts [Last slot]",
+    value: "6:00 AM – 2:00 AM",
+    note: "Open daily · Last slot starts 1:00 AM",
     mono: true,
-  },
-  {
-    id: "parking",
-    icon: CircleParking,
-    label: "Parking",
-    value: "[N] slots",
-    note: "[Parking / access notes]",
-    mono: true,
-  },
-  {
-    id: "getting-here",
-    icon: Route,
-    label: "Getting Here",
-    value: "[Nearest landmark]",
-    note: "[Transit / drop-off notes]",
   },
 ];
 
 export default function LocationPanel() {
   return (
     <div className="grid grid-cols-[1.05fr_1fr] items-stretch gap-5 max-[920px]:grid-cols-1">
-      <div
-        className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[var(--radius)] border border-border bg-[linear-gradient(90deg,rgba(156,176,195,0.18)_1px,transparent_1px)_0_0/40px_40px,linear-gradient(rgba(156,176,195,0.18)_1px,transparent_1px)_0_0/40px_40px,linear-gradient(135deg,var(--surface-muted)_0%,var(--canvas)_100%)] shadow-[var(--shadow-sm)] max-[640px]:min-h-[240px]"
-        role="img"
-        aria-label="Map showing the Prime Sports Club location"
-      >
-        <div className="absolute left-[10%] right-[10%] top-[55%] h-[3px] rounded bg-muted" aria-hidden="true" />
-        <div
-          className="absolute bottom-[15%] left-[25%] h-[2px] w-[30%] rotate-[15deg] rounded bg-muted"
-          aria-hidden="true"
+      <div className="relative min-h-[320px] overflow-hidden rounded-[var(--radius)] border border-border shadow-[var(--shadow-sm)] max-[640px]:min-h-[240px]">
+        <iframe
+          src={MAPS_EMBED_SRC}
+          title="Map showing the Prime Sports Clubhouse location in Minglanilla, Cebu"
+          aria-label="Map showing the Prime Sports Clubhouse location in Minglanilla, Cebu"
+          className="absolute inset-0 size-full grayscale-[15%] contrast-[1.05]"
+          style={{ border: 0 }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
         />
-        <div className="relative z-10 flex flex-col items-center gap-2">
-          <div
-            className="relative size-7 rotate-[-45deg] rounded-[50%_50%_50%_0] bg-accent shadow-[var(--shadow-md)] after:absolute after:left-2 after:top-2 after:size-3 after:rounded-full after:bg-canvas"
-            aria-hidden="true"
-          />
-          <span className="rounded-[var(--radius)] border border-border bg-surface-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.06em]">
-            Prime Sports
-          </span>
-        </div>
       </div>
 
       <div className="flex flex-col overflow-hidden rounded-[var(--radius)] border border-border border-t-2 border-t-accent-secondary bg-surface shadow-[var(--shadow-sm)]">
         <div className="border-b border-border px-7 py-6 max-[640px]:px-5 max-[640px]:py-5">
           <span className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-60">Visit the Club</span>
-          <h3 className="mt-2 [font-family:var(--font-heading)] text-[26px] font-extrabold uppercase tracking-[0.06em] max-[640px]:text-[22px]">
-            Prime Sports Club
+          <h3 className="mt-2 [font-family:var(--font-heading)] text-[26px] font-extrabold tracking-[0.06em] max-[640px]:text-[22px]">
+            PrimeSports Clubhouse
           </h3>
-          <p className="mt-1.5 text-[13px] opacity-60">Prestige court reservation &amp; community hub</p>
         </div>
 
         <dl className="grid flex-1 grid-cols-2 max-[560px]:grid-cols-1">
@@ -96,6 +76,16 @@ export default function LocationPanel() {
             </div>
           ))}
         </dl>
+
+        <a
+          href={MAPS_DIRECTIONS_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between gap-2 border-t border-border px-7 py-4.5 text-[13px] font-bold uppercase tracking-[0.08em] text-accent-secondary transition-colors duration-150 hover:bg-surface-muted hover:text-foreground max-[640px]:px-5"
+        >
+          Get Directions
+          <span aria-hidden="true">→</span>
+        </a>
       </div>
     </div>
   );

@@ -73,7 +73,11 @@ export function FaqMonochrome({
             <li
               key={item.question}
               className={cn(
-                "group relative overflow-hidden rounded-[calc(var(--radius)*2)] border shadow-[var(--shadow-sm)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] focus-within:-translate-y-0.5",
+                // The card paints its own dark surface via the inline `background` below, so its
+                // text color is pinned to `text-foreground` here rather than left to inherit —
+                // otherwise a light-themed section behind it would flip this to dark ink and wash
+                // the question text out against the dark card.
+                "group relative overflow-hidden rounded-[calc(var(--radius)*2)] border text-foreground shadow-[var(--shadow-sm)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] focus-within:-translate-y-0.5",
                 open ? "border-accent-secondary/60" : "border-border",
               )}
               onMouseMove={setCardGlow}

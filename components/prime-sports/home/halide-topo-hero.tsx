@@ -162,13 +162,10 @@ function createShot(fromU: number, fromV: number, toNear: boolean): RallyShot {
 }
 
 export default function HalideTopoHero({
-  label = "PRIME_CORE",
-  coordinate = "14°35'12\"N · 121°02'44\"E",
-  measurement = "SURF 13.41M · ELEV 24.6M",
   headlineTop = "Prime",
   headlineBottom = "Sports",
-  tag = "[ EST. 2024 ]",
-  caption = "Survey plate 04 — covered & outdoor championship courts, booked by the hour.",
+  tag = "[ EST. 2026 ]",
+  caption = "Building communities, Not just sports facilities.",
   ctaHref = "/reserve",
   ctaLabel = "Reserve a court",
 }: HalideTopoHeroProps) {
@@ -394,6 +391,7 @@ export default function HalideTopoHero({
         } as CSSProperties
       }
       data-od-id="halide-topo-hero"
+      data-nav-theme="dark"
     >
       {/* Section 1 of the alternating backdrop rhythm — the orthogonal grid style. */}
       <SectionBackdrop variant="grid" />
@@ -508,17 +506,10 @@ export default function HalideTopoHero({
       <div
         className={`${getPrimeContainerClassName("wide")} relative z-10 grid min-h-[max(620px,86svh)] grid-rows-[auto_1fr_auto] gap-12 py-16 max-[640px]:min-h-[560px] max-[640px]:gap-10 max-[640px]:py-12`}
       >
-        <div className="flex items-start justify-between gap-6">
-          <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground max-[640px]:text-[10px] max-[640px]:tracking-[0.16em]">
-            {label}
-          </span>
-       
-        </div>
-
         {/* Vertically centred on wide screens; pinned to the top on phones so the
             headline clears the court plate instead of sitting on top of it. */}
         <div className="flex items-center max-[640px]:items-start">
-          <h1 className={`${primeHeadingBaseClass} text-[clamp(56px,13vw,168px)] font-extrabold leading-[0.86] tracking-[0.02em] text-foreground [text-shadow:0_18px_48px_rgba(2,8,18,0.45)]`}>
+          <h1 className={`${primeHeadingBaseClass} text-[clamp(56px,13vw,150px)] font-extrabold leading-[0.86] tracking-[0.02em] text-foreground [text-shadow:0_18px_48px_rgba(2,8,18,0.45)]`}>
             {headlineTop}
             <br />
             {headlineBottom}
@@ -526,9 +517,9 @@ export default function HalideTopoHero({
         </div>
 
         <div className="flex flex-wrap items-end justify-between gap-8 max-[640px]:gap-7">
-          <div className={`${primeMonoValueClass} max-w-[40ch] text-[11px] uppercase leading-[1.7] tracking-[0.1em] text-foreground/55`}>
+          <div className={`${primeMonoValueClass} max-w-[60ch] text-[12px] uppercase leading-[1.7] tracking-[0.1em] text-foreground/55`}>
             <span className="block text-foreground/75">{tag}</span>
-            <span className="block">{caption}</span>
+            <span className="block whitespace-nowrap">{caption}</span>
           </div>
 
           <SkewCta href={ctaHref}>{ctaLabel}</SkewCta>

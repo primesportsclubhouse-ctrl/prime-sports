@@ -18,82 +18,79 @@ const iconSize = 22;
  */
 const facilityCards: CardItem[] = [
   {
-    id: "covered-courts",
-    title: "Covered Courts",
+    id: "pickeball-courts",
+    title: "Pickleball Courts",
     description:
-      "Climate-controlled, professional-grade surfaces with gallery seating and tournament-spec lighting.",
+      "International Standard Silica Sand Surfaces",
     media: {
       type: "image",
       src: "/prime-sports/prime-core-court.jpeg",
       alt: "Prime Sports covered championship court",
     },
-    icon: <Building2 size={iconSize} />,
-    meta: "[N] courts · [Surface]",
+    meta: "7 courts",
   },
   {
-    id: "show-court",
-    title: "Show Court",
+    id: "badminton-courts",
+    title: "Badminton Courts",
     description:
-      "The centre court where club finals are played, with broadcast-ready sightlines from every seat.",
+      "International Standard Taraflex Surfaces",
     media: {
       type: "image",
       src: "https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&w=1400&q=80",
       alt: "Indoor badminton show court",
     },
-    icon: <Trophy size={iconSize} />,
-    meta: "[Seats] capacity",
+    meta: "4 courts",
   },
   {
-    id: "outdoor-courts",
-    title: "Outdoor Courts",
+    id: "players-lounge",
+    title: "Players' Lounge (AC)",
     description:
-      "Open-air, championship-spec surfaces built for daytime play and weekend club leagues.",
+      "Comfortable seating for players waiting on the next slot.",
     media: {
       type: "image",
       src: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1400&q=80",
       alt: "Outdoor sports courts at Prime Sports",
     },
-    icon: <LandPlot size={iconSize} />,
-    meta: "[N] courts · [Surface]",
+    // meta: "[N] courts · [Surface]",
   },
   {
-    id: "night-play",
-    title: "Night Play",
+    id: "multi-purpose-area",
+    title: "Multi-Purpose Area",
     description:
-      "Evening sessions under even, glare-free floodlighting — the club's busiest block of the day.",
+      "Open space for warm-ups and footwork drills sessions between games.",
     media: {
       type: "image",
       src: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1400&q=80",
       alt: "Court under evening floodlights",
     },
-    icon: <Moon size={iconSize} />,
-    meta: "[Time range] · Peak",
+    // icon: <Moon size={iconSize} />,
+    // meta: "[Time range] · Peak",
   },
   {
-    id: "training-zone",
-    title: "Training Zone",
+    id: "food-park",
+    title: "Food Park",
     description:
-      "Court-side conditioning space for warm-ups, footwork drills, and coached sessions between games.",
+      "Refreshments and light meals for players and visitors.",
     media: {
       type: "image",
       src: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1400&q=80",
       alt: "Court-side training and conditioning zone",
     },
-    icon: <Dumbbell size={iconSize} />,
-    meta: "Open [Open]–[Close]",
+    // icon: <Dumbbell size={iconSize} />,
+    // meta: "Open [Open]–[Close]",
   },
   {
-    id: "members-lounge",
-    title: "Members' Lounge",
+    id: "toilet-shower-room",
+    title: "AC Toilet & Shower Room",
     description:
-      "Seating, refreshments, and a full view of the courts for players waiting on the next slot.",
+      "Clean and well-maintained facilities for player convenience.",
     media: {
       type: "image",
       src: "https://images.unsplash.com/photo-1552667466-07770ae110d0?auto=format&fit=crop&w=1400&q=80",
       alt: "Club seating and lounge area",
     },
-    icon: <Sofa size={iconSize} />,
-    meta: "[Amenities]",
+    // icon: <Sofa size={iconSize} />,
+    // meta: "[Amenities]",
   },
 ];
 
