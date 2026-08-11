@@ -17,9 +17,12 @@ interface NavBarProps {
   items: NavItem[];
   className?: string;
   placement?: "top" | "bottom";
+  /** `light` reads dark ink on a cream surface; `dark` (default) reads cream on navy. */
+  theme?: "dark" | "light";
 }
 
-export function NavBar({ items, className, placement = "top" }: NavBarProps) {
+export function NavBar({ items, className, placement = "top", theme = "dark" }: NavBarProps) {
+  const isLight = theme === "light";
   const firstItemName = useMemo(() => items[0]?.name ?? "", [items]);
   const [activeTab, setActiveTab] = useState(firstItemName);
 
@@ -69,7 +72,7 @@ export function NavBar({ items, className, placement = "top" }: NavBarProps) {
         className,
       )}
     >
-      <div className="flex items-center gap-1 p-1.5 shadow-[var(--shadow-md)] backdrop-blur-[10px]">
+      <div className="flex items-center gap-1 p-1.5">
         {items.map((item) => {
           const Icon = iconMap[item.icon as keyof typeof iconMap] ?? CircleSlash;
           const isActive = activeTab === item.name;
@@ -81,8 +84,8 @@ export function NavBar({ items, className, placement = "top" }: NavBarProps) {
               onClick={() => setActiveTab(item.name)}
               className={cn(
                 "relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-full px-3.5 py-2.5 text-xs font-semibold uppercase tracking-[0.06em] transition-colors md:px-5",
-                "text-foreground/80 hover:text-accent-secondary",
-                isActive && "text-accent-secondary",
+                isLight ? "text-canvas/70 hover:text-accent" : "text-foreground/80 hover:text-accent-secondary",
+                isActive && (isLight ? "text-accent" : "text-accent-secondary"),
               )}
               aria-label={item.name}
             >
@@ -93,12 +96,15 @@ export function NavBar({ items, className, placement = "top" }: NavBarProps) {
               {isActive && (
                 <motion.div
                   layoutId="prime-section-lamp"
-                  className="absolute inset-0 -z-10 rounded-full border border-accent-secondary/35 bg-[rgba(212,163,89,0.15)]"
+                  className={cn(
+                    "absolute inset-0 -z-10 rounded-full border",
+                    isLight ? "border-accent/35 bg-[rgba(200,55,45,0.12)]" : "border-accent-secondary/35 bg-[rgba(212,163,89,0.15)]",
+                  )}
                   initial={false}
                   transition={{ type: "spring", stiffness: 280, damping: 28 }}
                 >
-                  <div className="absolute -top-1.5 left-1/2 h-1.5 w-10 -translate-x-1/2 rounded-t-full bg-accent-secondary/80">
-                    <div className="absolute -left-2 -top-1.5 h-5 w-14 rounded-full bg-accent-secondary/25 blur-md" />
+                  <div className={cn("absolute -top-1.5 left-1/2 h-1.5 w-10 -translate-x-1/2 rounded-t-full", isLight ? "bg-accent/80" : "bg-accent-secondary/80")}>
+                    <div className={cn("absolute -left-2 -top-1.5 h-5 w-14 rounded-full blur-md", isLight ? "bg-accent/25" : "bg-accent-secondary/25")} />
                   </div>
                 </motion.div>
               )}

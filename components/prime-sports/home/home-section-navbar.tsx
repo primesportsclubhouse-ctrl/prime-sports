@@ -5,7 +5,7 @@ import { NavBar } from "@/components/ui/tubelight-navbar";
 const sectionNavItems = [
   { name: "Courts & Pricing", url: "/#pricing", icon: "pricing" },
   { name: "Facility", url: "/#facility", icon: "facility" },
-  { name: "FAQ", url: "/#faq", icon: "faq" },
+  { name: "FAQs", url: "/#faq", icon: "faq" },
   { name: "Location", url: "/#location", icon: "location" },
 ];
 
