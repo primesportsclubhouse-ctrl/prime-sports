@@ -51,7 +51,7 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Prime Sports",
+  title: "PrimeSports Clubhouse",
   description: "Prime Sports court reservation platform prototype migrated to Next.js and TypeScript.",
 };
 
