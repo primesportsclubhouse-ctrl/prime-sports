@@ -1,0 +1,247 @@
+{
+  ".claude/settings.local.json": {
+    "mtime": 1785763687.9986665,
+    "ast_hash": "24043b3c78293bbbef45e857956cc4e5",
+    "semantic_hash": "24043b3c78293bbbef45e857956cc4e5"
+  },
+  "app/(public)/checkout/page.tsx": {
+    "mtime": 1785680077.5934994,
+    "ast_hash": "d52916df052b84368bc3b0c0bd08f617",
+    "semantic_hash": "d52916df052b84368bc3b0c0bd08f617"
+  },
+  "app/(public)/page.tsx": {
+    "mtime": 1785681896.081248,
+    "ast_hash": "4912dc524a216a45e1c26b7cde1c53ca",
+    "semantic_hash": "4912dc524a216a45e1c26b7cde1c53ca"
+  },
+  "app/(public)/reserve/page.tsx": {
+    "mtime": 1785680097.0063672,
+    "ast_hash": "5b95a8109af020effb9e4b768364fb80",
+    "semantic_hash": "5b95a8109af020effb9e4b768364fb80"
+  },
+  "app/(public)/reserve/schedule/page.tsx": {
+    "mtime": 1785680139.0492353,
+    "ast_hash": "31c123d571b3767302ce6eee6a137a3f",
+    "semantic_hash": "31c123d571b3767302ce6eee6a137a3f"
+  },
+  "app/(public)/roster/page.tsx": {
+    "mtime": 1785419577.2834654,
+    "ast_hash": "f79d11893bbc090571ea97580bd49e1d",
+    "semantic_hash": "f79d11893bbc090571ea97580bd49e1d"
+  },
+  "app/admin/dashboard/page.tsx": {
+    "mtime": 1785420603.5417812,
+    "ast_hash": "b3d44ae8b2584d64f9ea9f1c7ee5b149",
+    "semantic_hash": "b3d44ae8b2584d64f9ea9f1c7ee5b149"
+  },
+  "app/admin/page.tsx": {
+    "mtime": 1785420604.4076903,
+    "ast_hash": "f606b6d75650b59c8141d7788d4ddc48",
+    "semantic_hash": "f606b6d75650b59c8141d7788d4ddc48"
+  },
+  "app/admin/roster/page.tsx": {
+    "mtime": 1785420605.4931028,
+    "ast_hash": "54b96165ac163e08903fde4cfd0ea83b",
+    "semantic_hash": "54b96165ac163e08903fde4cfd0ea83b"
+  },
+  "app/layout.tsx": {
+    "mtime": 1785682296.3737738,
+    "ast_hash": "a32db31ef3aec7f0ea84171857a2df69",
+    "semantic_hash": "a32db31ef3aec7f0ea84171857a2df69"
+  },
+  "components/prime-sports/admin/admin-dashboard.tsx": {
+    "mtime": 1785419215.6641364,
+    "ast_hash": "83bfc2e812bafbef691503d3b94aeaeb",
+    "semantic_hash": "83bfc2e812bafbef691503d3b94aeaeb"
+  },
+  "components/prime-sports/admin/admin-login-form.tsx": {
+    "mtime": 1785419577.2834654,
+    "ast_hash": "05bc38bd68de53d67ae4bdee20b5459d",
+    "semantic_hash": "05bc38bd68de53d67ae4bdee20b5459d"
+  },
+  "components/prime-sports/admin/admin-shell.tsx": {
+    "mtime": 1785419577.2824614,
+    "ast_hash": "433a3b4d520a2385c69766f8c3b4d5f3",
+    "semantic_hash": "433a3b4d520a2385c69766f8c3b4d5f3"
+  },
+  "components/prime-sports/booking/booking-client.tsx": {
+    "mtime": 1785682394.318594,
+    "ast_hash": "15d33e31db2db2c8a3ace7c3d7dd5a3c",
+    "semantic_hash": "15d33e31db2db2c8a3ace7c3d7dd5a3c"
+  },
+  "components/prime-sports/booking/booking-steps.tsx": {
+    "mtime": 1785594409.96875,
+    "ast_hash": "a0cb8f0a7e241f42fd8c5f2722e07d9c",
+    "semantic_hash": "a0cb8f0a7e241f42fd8c5f2722e07d9c"
+  },
+  "components/prime-sports/booking/checkout-client.tsx": {
+    "mtime": 1785682471.4001665,
+    "ast_hash": "7b6cf477a3e9259ff5c0ed7aefcaaadf",
+    "semantic_hash": "7b6cf477a3e9259ff5c0ed7aefcaaadf"
+  },
+  "components/prime-sports/booking/contact-details-client.tsx": {
+    "mtime": 1785682330.301331,
+    "ast_hash": "3ce1152099961735f317e12e5c21547c",
+    "semantic_hash": "3ce1152099961735f317e12e5c21547c"
+  },
+  "components/prime-sports/booking/page-intro.tsx": {
+    "mtime": 1785419237.5452688,
+    "ast_hash": "16a25471154a1e12ecfc62da92947765",
+    "semantic_hash": "16a25471154a1e12ecfc62da92947765"
+  },
+  "components/prime-sports/booking/qr-code-card.tsx": {
+    "mtime": 1785594823.2863061,
+    "ast_hash": "f21383f0613b3e4eff6ab3735120945e",
+    "semantic_hash": "f21383f0613b3e4eff6ab3735120945e"
+  },
+  "components/prime-sports/booking/reservation-provider.tsx": {
+    "mtime": 1785682274.9034715,
+    "ast_hash": "8c9936bc75a0e55f93f149c1b6dd4ec9",
+    "semantic_hash": "8c9936bc75a0e55f93f149c1b6dd4ec9"
+  },
+  "components/prime-sports/booking/waiver-form-dialog.tsx": {
+    "mtime": 1785593120.8034513,
+    "ast_hash": "61655a21cff3030f0d5f80d2c80630ac",
+    "semantic_hash": "61655a21cff3030f0d5f80d2c80630ac"
+  },
+  "components/prime-sports/home/facility-showcase.tsx": {
+    "mtime": 1785591352.1976852,
+    "ast_hash": "de8a026eea475bfd7e1d150c61ec02e0",
+    "semantic_hash": "de8a026eea475bfd7e1d150c61ec02e0"
+  },
+  "components/prime-sports/home/halide-topo-hero.tsx": {
+    "mtime": 1785681448.1161695,
+    "ast_hash": "7b837623dbdbe3ee81cab3c567ad097d",
+    "semantic_hash": "7b837623dbdbe3ee81cab3c567ad097d"
+  },
+  "components/prime-sports/home/home-faq.tsx": {
+    "mtime": 1785590136.774963,
+    "ast_hash": "2637e8c013b3d6092118a468f2d047ed",
+    "semantic_hash": "2637e8c013b3d6092118a468f2d047ed"
+  },
+  "components/prime-sports/home/home-section-navbar.tsx": {
+    "mtime": 1785591462.3400095,
+    "ast_hash": "15b94d6bb26b11b15603f05ea065ced3",
+    "semantic_hash": "15b94d6bb26b11b15603f05ea065ced3"
+  },
+  "components/prime-sports/home/location-panel.tsx": {
+    "mtime": 1785591397.2107315,
+    "ast_hash": "d8c81f8e87fc51426fe6318d02d56dc4",
+    "semantic_hash": "d8c81f8e87fc51426fe6318d02d56dc4"
+  },
+  "components/prime-sports/home/section-intro.tsx": {
+    "mtime": 1785419237.547534,
+    "ast_hash": "8722ade120008db1e09b6d17c1abf77a",
+    "semantic_hash": "8722ade120008db1e09b6d17c1abf77a"
+  },
+  "components/prime-sports/layout/app-shell.tsx": {
+    "mtime": 1785680024.087201,
+    "ast_hash": "af140ad0b82830a811b0952b1c1c36e8",
+    "semantic_hash": "af140ad0b82830a811b0952b1c1c36e8"
+  },
+  "components/prime-sports/layout/mobile-nav.tsx": {
+    "mtime": 1785681401.8314495,
+    "ast_hash": "8fd5fac7614e1dd1113b78772adafc4f",
+    "semantic_hash": "8fd5fac7614e1dd1113b78772adafc4f"
+  },
+  "components/prime-sports/layout/site-footer.tsx": {
+    "mtime": 1785419344.5312538,
+    "ast_hash": "22412af3877f3cbd1ccfef1f09d4d153",
+    "semantic_hash": "22412af3877f3cbd1ccfef1f09d4d153"
+  },
+  "components/prime-sports/layout/site-header.tsx": {
+    "mtime": 1785682771.7448967,
+    "ast_hash": "1792062e5360a24c5f08dbe6b9533530",
+    "semantic_hash": "1792062e5360a24c5f08dbe6b9533530"
+  },
+  "components/prime-sports/roster/roster-client.tsx": {
+    "mtime": 1785419237.547534,
+    "ast_hash": "562557e659ef35089a7181a1dc3e405a",
+    "semantic_hash": "562557e659ef35089a7181a1dc3e405a"
+  },
+  "components/prime-sports/toast/toast-provider.tsx": {
+    "mtime": 1785594383.4023077,
+    "ast_hash": "a8c52ecd581ca7cfc617e3328b20657d",
+    "semantic_hash": "a8c52ecd581ca7cfc617e3328b20657d"
+  },
+  "components/prime-sports/ui/section-backdrop.tsx": {
+    "mtime": 1785682053.9285874,
+    "ast_hash": "a09f5a1be60fd3c316c58d7b7d2d88a0",
+    "semantic_hash": "a09f5a1be60fd3c316c58d7b7d2d88a0"
+  },
+  "components/prime-sports/ui/skew-cta.tsx": {
+    "mtime": 1785681121.7502418,
+    "ast_hash": "c1ec9a340d85ebe293c020cdb76eb7e1",
+    "semantic_hash": "c1ec9a340d85ebe293c020cdb76eb7e1"
+  },
+  "components/ui/demo.tsx": {
+    "mtime": 1785421092.5521955,
+    "ast_hash": "81924052c2bb5a5871a806238e870f9b",
+    "semantic_hash": "81924052c2bb5a5871a806238e870f9b"
+  },
+  "components/ui/expanding-cards.tsx": {
+    "mtime": 1785591312.143018,
+    "ast_hash": "d6d5fea3eb0500abe9aee51eac675625",
+    "semantic_hash": "d6d5fea3eb0500abe9aee51eac675625"
+  },
+  "components/ui/faq-monochrome.tsx": {
+    "mtime": 1785590130.1666458,
+    "ast_hash": "de0f5fe40fd29b24e055970f92241a5a",
+    "semantic_hash": "de0f5fe40fd29b24e055970f92241a5a"
+  },
+  "components/ui/tubelight-navbar.tsx": {
+    "mtime": 1785591480.3708162,
+    "ast_hash": "c517f476fce439ad2a8f3d1f740bba29",
+    "semantic_hash": "c517f476fce439ad2a8f3d1f740bba29"
+  },
+  "eslint.config.mjs": {
+    "mtime": 1784792535.4475837,
+    "ast_hash": "dfa1f5f6a7037bf39dc510f30b180002",
+    "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
+  },
+  "lib/prime-sports.ts": {
+    "mtime": 1785682238.870595,
+    "ast_hash": "b33f087a563c33b7a15b4ad14a677647",
+    "semantic_hash": "b33f087a563c33b7a15b4ad14a677647"
+  },
+  "lib/supabase/client.ts": {
+    "mtime": 1785595709.0839562,
+    "ast_hash": "72963c72065fac587086e331550b4e70",
+    "semantic_hash": "72963c72065fac587086e331550b4e70"
+  },
+  "lib/supabase/server.ts": {
+    "mtime": 1785595717.3146484,
+    "ast_hash": "875c66b03d8c88f5509d3a226d80cad4",
+    "semantic_hash": "875c66b03d8c88f5509d3a226d80cad4"
+  },
+  "lib/utils.ts": {
+    "mtime": 1785420891.6856382,
+    "ast_hash": "d5c3aa9db33aa2c93c04dc9d8d6a6c31",
+    "semantic_hash": "d5c3aa9db33aa2c93c04dc9d8d6a6c31"
+  },
+  "next.config.ts": {
+    "mtime": 1785591328.6553533,
+    "ast_hash": "55246c733e815361df7001ec6ef1b563",
+    "semantic_hash": "55246c733e815361df7001ec6ef1b563"
+  },
+  "package.json": {
+    "mtime": 1785595534.4280362,
+    "ast_hash": "a8fdca975f9dd02d1665f7ad65bd431c",
+    "semantic_hash": "a8fdca975f9dd02d1665f7ad65bd431c"
+  },
+  "postcss.config.mjs": {
+    "mtime": 1784792535.4545653,
+    "ast_hash": "239f3ebf717465dc636818a1a619398d",
+    "semantic_hash": "239f3ebf717465dc636818a1a619398d"
+  },
+  "supabase/migrations/20260801000000_phase1_core_schema.sql": {
+    "mtime": 1785595679.55655,
+    "ast_hash": "4249aaed496c97c735386d77d7fb84cc",
+    "semantic_hash": "4249aaed496c97c735386d77d7fb84cc"
+  },
+  "tsconfig.json": {
+    "mtime": 1784792536.1674287,
+    "ast_hash": "02fc19ad21338c2ab820a70136310db4",
+    "semantic_hash": "02fc19ad21338c2ab820a70136310db4"
+  }
+}

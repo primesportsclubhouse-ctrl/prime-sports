@@ -1,0 +1,494 @@
+{
+  "communities": {
+    "0": [
+      "components_prime_sports_admin_admin_dashboard",
+      "components_prime_sports_admin_admin_dashboard_admindashboard",
+      "components_prime_sports_admin_admin_dashboard_bookingmap",
+      "components_prime_sports_booking_booking_client",
+      "components_prime_sports_booking_booking_client_bookingclient",
+      "components_prime_sports_booking_booking_client_occupiedslots",
+      "components_prime_sports_booking_booking_steps",
+      "components_prime_sports_booking_booking_steps_bookingsteps",
+      "components_prime_sports_booking_booking_steps_bookingstepsprops",
+      "components_prime_sports_booking_booking_steps_steplabels",
+      "components_prime_sports_booking_checkout_client",
+      "components_prime_sports_booking_checkout_client_checkoutclient",
+      "components_prime_sports_booking_checkout_client_paymentchannels",
+      "components_prime_sports_booking_checkout_client_uploadstate",
+      "components_prime_sports_booking_contact_details_client",
+      "components_prime_sports_booking_contact_details_client_contactdetailsclient",
+      "components_prime_sports_booking_qr_code_card",
+      "components_prime_sports_booking_qr_code_card_qrcodecard",
+      "components_prime_sports_booking_qr_code_card_qrcodecardprops",
+      "components_prime_sports_booking_reservation_provider_usereservation",
+      "components_prime_sports_booking_waiver_form_dialog",
+      "components_prime_sports_booking_waiver_form_dialog_waiverformdialog",
+      "components_prime_sports_toast_toast_provider_usetoast",
+      "lib_prime_sports",
+      "lib_prime_sports_bookingstepstatus",
+      "lib_prime_sports_courtnames",
+      "lib_prime_sports_courtrates",
+      "lib_prime_sports_createadminbookings",
+      "lib_prime_sports_createoccupiedslots",
+      "lib_prime_sports_createqrpixelgrid",
+      "lib_prime_sports_createverificationqueue",
+      "lib_prime_sports_formatcurrency",
+      "lib_prime_sports_formatprimedate",
+      "lib_prime_sports_getweekstart",
+      "lib_prime_sports_monthnames",
+      "lib_prime_sports_primebuttonbaseclass",
+      "lib_prime_sports_primebuttonnavyclass",
+      "lib_prime_sports_primebuttonoutlineclass",
+      "lib_prime_sports_primebuttonprimaryclass",
+      "lib_prime_sports_primecontainerclasses",
+      "lib_prime_sports_primeeditorialaccentclass",
+      "lib_prime_sports_primemetalabelclass",
+      "lib_prime_sports_primenavlink",
+      "lib_prime_sports_primeplaceholderclass",
+      "lib_prime_sports_primesectioneyebrowclass",
+      "lib_prime_sports_primesectionheaderrowclass",
+      "lib_prime_sports_primesectiontitleclass",
+      "lib_prime_sports_primesurfacepanelclass",
+      "lib_prime_sports_primetoolbartextbuttonclass",
+      "lib_prime_sports_queuesubmission",
+      "lib_prime_sports_slotselection",
+      "lib_prime_sports_timeslots",
+      "lib_prime_sports_weekdaynames"
+    ],
+    "1": [
+      "components_prime_sports_home_halide_topo_hero",
+      "components_prime_sports_home_halide_topo_hero_across_v",
+      "components_prime_sports_home_halide_topo_hero_arc_peak",
+      "components_prime_sports_home_halide_topo_hero_between",
+      "components_prime_sports_home_halide_topo_hero_court_origin",
+      "components_prime_sports_home_halide_topo_hero_court_u",
+      "components_prime_sports_home_halide_topo_hero_court_v",
+      "components_prime_sports_home_halide_topo_hero_courtpoint",
+      "components_prime_sports_home_halide_topo_hero_createshot",
+      "components_prime_sports_home_halide_topo_hero_far_side_u",
+      "components_prime_sports_home_halide_topo_hero_halidetopohero",
+      "components_prime_sports_home_halide_topo_hero_halidetopoheroprops",
+      "components_prime_sports_home_halide_topo_hero_near_side_u",
+      "components_prime_sports_home_halide_topo_hero_platetransform",
+      "components_prime_sports_home_halide_topo_hero_projectontoplate",
+      "components_prime_sports_home_halide_topo_hero_rallyshot",
+      "components_prime_sports_home_halide_topo_hero_range",
+      "components_prime_sports_home_halide_topo_hero_roll_cos",
+      "components_prime_sports_home_halide_topo_hero_roll_sin",
+      "components_prime_sports_home_halide_topo_hero_shot_ms",
+      "components_prime_sports_ui_section_backdrop",
+      "components_prime_sports_ui_section_backdrop_glintanimation",
+      "components_prime_sports_ui_section_backdrop_glintgradient",
+      "components_prime_sports_ui_section_backdrop_glintstyle",
+      "components_prime_sports_ui_section_backdrop_grid_glints",
+      "components_prime_sports_ui_section_backdrop_sectionbackdrop",
+      "components_prime_sports_ui_section_backdrop_sectionbackdropprops",
+      "components_prime_sports_ui_section_backdrop_sectionbackdropvariant",
+      "components_prime_sports_ui_section_backdrop_stellar_layer",
+      "components_prime_sports_ui_section_backdrop_stellar_rings",
+      "components_prime_sports_ui_section_backdrop_stellar_spokes",
+      "lib_prime_sports_primeheadingbaseclass",
+      "lib_prime_sports_primemonovalueclass"
+    ],
+    "2": [
+      "app_public_page",
+      "app_public_page_faqitems",
+      "app_public_page_home",
+      "app_public_page_metadata",
+      "app_public_page_modules",
+      "components_prime_sports_home_facility_showcase",
+      "components_prime_sports_home_facility_showcase_facilitycards",
+      "components_prime_sports_home_facility_showcase_facilityshowcase",
+      "components_prime_sports_home_home_faq",
+      "components_prime_sports_home_home_faq_homefaq",
+      "components_prime_sports_home_home_faq_homefaqprops",
+      "components_prime_sports_home_location_panel",
+      "components_prime_sports_home_location_panel_details",
+      "components_prime_sports_home_location_panel_locationpanel",
+      "components_prime_sports_home_section_intro",
+      "components_prime_sports_home_section_intro_sectionintro",
+      "components_prime_sports_home_section_intro_sectionintroprops",
+      "components_ui_expanding_cards",
+      "components_ui_expanding_cards_carditem",
+      "components_ui_expanding_cards_cardmedia",
+      "components_ui_expanding_cards_cardmedialayer",
+      "components_ui_expanding_cards_expandingcards",
+      "components_ui_expanding_cards_expandingcardsprops",
+      "components_ui_expanding_cards_useprefersreducedmotion",
+      "components_ui_faq_monochrome",
+      "components_ui_faq_monochrome_faqitem",
+      "components_ui_faq_monochrome_faqmonochrome",
+      "components_ui_faq_monochrome_faqmonochromeprops",
+      "lib_prime_sports_primebuttonlargeclass",
+      "lib_utils",
+      "lib_utils_cn"
+    ],
+    "3": [
+      "ref_dom",
+      "ref_dom_iterable",
+      "ref_esnext",
+      "ref_mts",
+      "ref_next_dev_types_ts",
+      "ref_next_env_d_ts",
+      "ref_next_types_ts",
+      "ref_node_modules",
+      "ref_ts",
+      "ref_tsx",
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowjs",
+      "tsconfig_compileroptions_esmoduleinterop",
+      "tsconfig_compileroptions_incremental",
+      "tsconfig_compileroptions_isolatedmodules",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_plugins",
+      "tsconfig_compileroptions_resolvejsonmodule",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target",
+      "tsconfig_exclude",
+      "tsconfig_include"
+    ],
+    "4": [
+      "framer_motion",
+      "lucide_react",
+      "next",
+      "package",
+      "package_dependencies",
+      "package_dependencies_framer_motion",
+      "package_dependencies_lucide_react",
+      "package_dependencies_next",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_supabase_ssr",
+      "package_dependencies_supabase_supabase_js",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_start",
+      "package_version",
+      "react",
+      "react_dom",
+      "supabase_ssr",
+      "supabase_supabase_js"
+    ],
+    "5": [
+      "components_prime_sports_home_home_section_navbar",
+      "components_prime_sports_home_home_section_navbar_homesectionnavbar",
+      "components_prime_sports_home_home_section_navbar_sectionnavitems",
+      "components_prime_sports_layout_mobile_nav",
+      "components_prime_sports_layout_mobile_nav_mobilenav",
+      "components_prime_sports_layout_mobile_nav_mobilenavprops",
+      "components_prime_sports_layout_mobile_nav_navlink",
+      "components_prime_sports_layout_site_header",
+      "components_prime_sports_layout_site_header_headernavlinks",
+      "components_prime_sports_layout_site_header_mobilenavlinks",
+      "components_prime_sports_layout_site_header_siteheaderprops",
+      "components_prime_sports_ui_skew_cta",
+      "components_prime_sports_ui_skew_cta_skewcta",
+      "components_prime_sports_ui_skew_cta_skewctaprops",
+      "components_prime_sports_ui_skew_cta_skewctasize",
+      "components_prime_sports_ui_skew_cta_skewctasizeclasses",
+      "components_ui_demo",
+      "components_ui_demo_navbardemo",
+      "components_ui_tubelight_navbar",
+      "components_ui_tubelight_navbar_navbar",
+      "components_ui_tubelight_navbar_navbarprops",
+      "components_ui_tubelight_navbar_navitem",
+      "lib_prime_sports_primetoolbariconbuttonclass"
+    ],
+    "6": [
+      "app_layout",
+      "app_layout_instrumentserif",
+      "app_layout_inter",
+      "app_layout_jetbrainsmono",
+      "app_layout_metadata",
+      "app_layout_montserrat",
+      "app_layout_playfairdisplay",
+      "app_layout_plusjakartasans",
+      "app_layout_rootlayout",
+      "components_prime_sports_booking_reservation_provider",
+      "components_prime_sports_booking_reservation_provider_contactdetails",
+      "components_prime_sports_booking_reservation_provider_reservationcontext",
+      "components_prime_sports_booking_reservation_provider_reservationcontextvalue",
+      "components_prime_sports_booking_reservation_provider_reservationprovider",
+      "components_prime_sports_booking_reservation_provider_scheduleselection",
+      "components_prime_sports_toast_toast_provider",
+      "components_prime_sports_toast_toast_provider_toastcontext",
+      "components_prime_sports_toast_toast_provider_toastcontextvalue",
+      "components_prime_sports_toast_toast_provider_toastinput",
+      "components_prime_sports_toast_toast_provider_toastitem",
+      "components_prime_sports_toast_toast_provider_toastprovider",
+      "components_prime_sports_toast_toast_provider_toastvariant"
+    ],
+    "7": [
+      "app_public_checkout_page",
+      "app_public_checkout_page_checkoutpage",
+      "app_public_checkout_page_metadata",
+      "app_public_reserve_page",
+      "app_public_reserve_page_metadata",
+      "app_public_reserve_page_reservepage",
+      "app_public_reserve_schedule_page",
+      "app_public_reserve_schedule_page_metadata",
+      "app_public_reserve_schedule_page_reserveschedulepage",
+      "components_prime_sports_booking_page_intro",
+      "components_prime_sports_booking_page_intro_pageintro",
+      "components_prime_sports_booking_page_intro_pageintroprops",
+      "components_prime_sports_layout_app_shell",
+      "components_prime_sports_layout_app_shell_appshell",
+      "components_prime_sports_layout_app_shell_appshellprops",
+      "components_prime_sports_layout_site_footer",
+      "components_prime_sports_layout_site_footer_sitefooter",
+      "components_prime_sports_layout_site_footer_sitefooterprops",
+      "components_prime_sports_layout_site_header_siteheader",
+      "lib_prime_sports_containervariant",
+      "lib_prime_sports_getprimecontainerclassname",
+      "lib_prime_sports_primenavlinks"
+    ],
+    "8": [
+      "eslint",
+      "eslint_config_next",
+      "package_devdependencies",
+      "package_devdependencies_eslint",
+      "package_devdependencies_eslint_config_next",
+      "package_devdependencies_supabase",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_tailwindcss_postcss",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_typescript",
+      "supabase",
+      "tailwindcss",
+      "tailwindcss_postcss",
+      "types_node",
+      "types_react",
+      "types_react_dom",
+      "typescript"
+    ],
+    "9": [
+      "app_admin_dashboard_page",
+      "app_admin_dashboard_page_admindashboardpage",
+      "app_admin_dashboard_page_metadata",
+      "app_admin_roster_page",
+      "app_admin_roster_page_adminrosterpage",
+      "app_admin_roster_page_metadata",
+      "components_prime_sports_admin_admin_shell",
+      "components_prime_sports_admin_admin_shell_adminlinks",
+      "components_prime_sports_admin_admin_shell_adminshell",
+      "components_prime_sports_admin_admin_shell_adminshellprops",
+      "components_prime_sports_roster_roster_client",
+      "components_prime_sports_roster_roster_client_getrandomname",
+      "components_prime_sports_roster_roster_client_lastnames",
+      "components_prime_sports_roster_roster_client_player",
+      "components_prime_sports_roster_roster_client_rosterclient",
+      "lib_prime_sports_primestatuspillbaseclass",
+      "lib_prime_sports_primesurfacecardclass"
+    ],
+    "10": [
+      "app_admin_page",
+      "app_admin_page_adminpage",
+      "app_admin_page_metadata",
+      "components_prime_sports_admin_admin_login_form",
+      "components_prime_sports_admin_admin_login_form_adminloginform"
+    ],
+    "11": [
+      "app_public_roster_page",
+      "app_public_roster_page_metadata",
+      "app_public_roster_page_rosterpage"
+    ],
+    "12": [
+      "eslint_config",
+      "eslint_config_eslintconfig"
+    ],
+    "13": [
+      "lib_supabase_client",
+      "lib_supabase_client_createclient"
+    ],
+    "14": [
+      "lib_supabase_server",
+      "lib_supabase_server_createclient"
+    ],
+    "15": [
+      "next_config",
+      "next_config_nextconfig"
+    ],
+    "16": [
+      "postcss_config",
+      "postcss_config_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.10014513788098693,
+    "1": 0.07386363636363637,
+    "2": 0.0967741935483871,
+    "3": 0.06896551724137931,
+    "4": 0.08333333333333333,
+    "5": 0.11462450592885376,
+    "6": 0.09956709956709957,
+    "7": 0.15151515151515152,
+    "8": 0.10526315789473684,
+    "9": 0.13970588235294118,
+    "10": 0.5,
+    "11": 0.6666666666666666,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0
+  },
+  "gods": [
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 16
+    },
+    {
+      "id": "lib_prime_sports_getprimecontainerclassname",
+      "label": "getPrimeContainerClassName()",
+      "degree": 11
+    },
+    {
+      "id": "lib_prime_sports_primecontainerclasses",
+      "label": "primeContainerClasses",
+      "degree": 8
+    },
+    {
+      "id": "lib_prime_sports_primebuttonprimaryclass",
+      "label": "primeButtonPrimaryClass",
+      "degree": 8
+    },
+    {
+      "id": "components_prime_sports_booking_booking_client_bookingclient",
+      "label": "BookingClient()",
+      "degree": 7
+    },
+    {
+      "id": "components_prime_sports_booking_reservation_provider_usereservation",
+      "label": "useReservation()",
+      "degree": 7
+    },
+    {
+      "id": "components_prime_sports_toast_toast_provider_usetoast",
+      "label": "useToast()",
+      "degree": 7
+    },
+    {
+      "id": "lib_prime_sports_formatprimedate",
+      "label": "formatPrimeDate()",
+      "degree": 7
+    },
+    {
+      "id": "lib_utils_cn",
+      "label": "cn()",
+      "degree": 7
+    },
+    {
+      "id": "tsconfig_include",
+      "label": "include",
+      "degree": 7
+    }
+  ],
+  "surprises": [
+    {
+      "source": "AdminShell()",
+      "target": "getPrimeContainerClassName()",
+      "source_files": [
+        "components/prime-sports/admin/admin-shell.tsx",
+        "lib/prime-sports.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "HalideTopoHero()",
+      "target": "getPrimeContainerClassName()",
+      "source_files": [
+        "components/prime-sports/home/halide-topo-hero.tsx",
+        "lib/prime-sports.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "NavBar()",
+      "target": "cn()",
+      "source_files": [
+        "components/ui/tubelight-navbar.tsx",
+        "lib/utils.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "AdminDashboard()",
+      "target": "createVerificationQueue()",
+      "source_files": [
+        "components/prime-sports/admin/admin-dashboard.tsx",
+        "lib/prime-sports.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "AdminDashboard()",
+      "target": "formatPrimeDate()",
+      "source_files": [
+        "components/prime-sports/admin/admin-dashboard.tsx",
+        "lib/prime-sports.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `getPrimeContainerClassName()` connect `app-shell.tsx` to `prime-sports.ts`, `roster-client.tsx`, `site-header.tsx`, `halide-topo-hero.tsx`?",
+      "why": "High betweenness centrality (0.022) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `primeButtonPrimaryClass` connect `prime-sports.ts` to `roster-client.tsx`, `(public)/page.tsx`, `admin/page.tsx`?",
+      "why": "High betweenness centrality (0.020) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `primeContainerClasses` connect `prime-sports.ts` to `roster-client.tsx`, `(public)/page.tsx`?",
+      "why": "High betweenness centrality (0.018) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `metadata`, `modules`, `faqItems` to the rest of the system?",
+      "why": "134 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `prime-sports.ts` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.10014513788098693 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `halide-topo-hero.tsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.07386363636363637 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `(public)/page.tsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.0967741935483871 - nodes in this community are weakly interconnected."
+    }
+  ]
+}
