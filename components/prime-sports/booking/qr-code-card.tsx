@@ -54,7 +54,7 @@ export default function QrCodeCard({ channelKey, label, account, seed }: QrCodeC
   }
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-[var(--radius)] border border-border bg-surface-muted p-4 text-center justify-between">
+    <div className="flex flex-col gap-2.5 rounded-[var(--radius)] border border-border bg-surface-muted p-4 text-center text-foreground justify-between">
       <div className="flex aspect-square items-center justify-center overflow-hidden rounded-[var(--radius)] border border-accent-secondary bg-[#f5efe6] p-3">
         <svg
           ref={svgRef}

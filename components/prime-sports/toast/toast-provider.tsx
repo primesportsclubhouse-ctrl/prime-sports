@@ -55,9 +55,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.96 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className={`pointer-events-auto flex w-full max-w-[380px] items-start gap-3 rounded-[var(--radius)] border p-4 shadow-[var(--shadow-md)] backdrop-blur-[6px] ${
-                toast.variant === "success" ? "border-success bg-[rgba(34,197,94,0.14)]" : "border-border bg-surface"
+              className={`pointer-events-auto flex w-full max-w-[380px] items-start gap-3 rounded-[var(--radius)] border p-4 text-foreground shadow-[var(--shadow-md)] ${
+                toast.variant === "success" ? "border-success" : "border-border bg-surface"
               }`}
+              style={
+                // The success tint used to be a translucent overlay blurred against whatever
+                // sat behind the toast — dark navy, fine; cream (now that some sections are),
+                // it washed the text out. Flatten it onto an opaque `--surface` base instead,
+                // same trick as the FAQ cards' glow, so the toast never depends on its backdrop.
+                toast.variant === "success"
+                  ? { background: "linear-gradient(0deg, rgba(34,197,94,0.14), rgba(34,197,94,0.14)), var(--surface)" }
+                  : undefined
+              }
               role="status"
             >
               {toast.variant === "success" ? (

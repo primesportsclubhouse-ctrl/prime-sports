@@ -94,7 +94,7 @@ export default function WaiverFormDialog() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="waiver-dialog-title"
-            className="flex max-h-[85vh] w-full max-w-[560px] flex-col rounded-[var(--radius)] border border-border bg-surface shadow-[var(--shadow-md)]"
+            className="flex max-h-[85vh] w-full max-w-[560px] flex-col rounded-[var(--radius)] border border-border bg-surface text-foreground shadow-[var(--shadow-md)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="shrink-0 border-b border-border p-6 pb-4">

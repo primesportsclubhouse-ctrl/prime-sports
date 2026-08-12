@@ -2,34 +2,37 @@
 
 import { ReactNode, createContext, useContext, useMemo, useState } from "react";
 
+import { SportKey } from "@/lib/prime-sports";
+
 type ContactDetails = {
   fullName: string;
   email: string;
   phone: string;
 };
 
-type ScheduleSelection = {
+export type BookingLineItem = {
   date: Date;
+  sport: SportKey;
   courtIndex: number;
   timeIndex: number;
 };
 
 type ReservationContextValue = {
   contact: ContactDetails | null;
-  schedule: ScheduleSelection | null;
+  bookings: BookingLineItem[];
   setContact: (contact: ContactDetails) => void;
-  setSchedule: (schedule: ScheduleSelection) => void;
+  setBookings: (bookings: BookingLineItem[]) => void;
 };
 
 const ReservationContext = createContext<ReservationContextValue | null>(null);
 
 export function ReservationProvider({ children }: { children: ReactNode }) {
   const [contact, setContact] = useState<ContactDetails | null>(null);
-  const [schedule, setSchedule] = useState<ScheduleSelection | null>(null);
+  const [bookings, setBookings] = useState<BookingLineItem[]>([]);
 
   const value = useMemo(
-    () => ({ contact, schedule, setContact, setSchedule }),
-    [contact, schedule],
+    () => ({ contact, bookings, setContact, setBookings }),
+    [contact, bookings],
   );
 
   return <ReservationContext.Provider value={value}>{children}</ReservationContext.Provider>;

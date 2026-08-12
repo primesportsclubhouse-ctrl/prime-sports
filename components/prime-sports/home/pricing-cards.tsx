@@ -2,27 +2,7 @@
 
 import { useState } from "react";
 
-import { formatCurrency, primeMonoValueClass } from "@/lib/prime-sports";
-
-type RateKey = "weekday" | "weekend";
-
-type RateWindow = {
-  label: string;
-  range: string;
-  rate: number;
-};
-
-/** Same schedule applies to every court — daytime runs 6AM–4PM, nighttime 4PM–2AM. */
-const RATE_WINDOWS: Record<RateKey, RateWindow[]> = {
-  weekday: [
-    { label: "Daytime Rate", range: "6:00 AM – 4:00 PM", rate: 450 },
-    { label: "Nighttime Rate", range: "4:00 PM – 2:00 AM", rate: 550 },
-  ],
-  weekend: [
-    { label: "Daytime Rate", range: "6:00 AM – 4:00 PM", rate: 550 },
-    { label: "Nighttime Rate", range: "4:00 PM – 2:00 AM", rate: 650 },
-  ],
-};
+import { RateKey, formatCurrency, primeMonoValueClass, rateWindows } from "@/lib/prime-sports";
 
 type PricingCourt = {
   key: string;
@@ -59,7 +39,7 @@ const TOGGLE_OPTIONS: { key: RateKey; label: string }[] = [
 
 export default function PricingCards() {
   const [rateKey, setRateKey] = useState<RateKey>("weekday");
-  const windows = RATE_WINDOWS[rateKey];
+  const windows = rateWindows[rateKey];
 
   return (
     <div>
