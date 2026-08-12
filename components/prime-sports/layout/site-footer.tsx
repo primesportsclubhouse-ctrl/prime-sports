@@ -19,8 +19,8 @@ export default function SiteFooter({
     return (
       <footer className="mt-10 border-t border-border py-8" data-od-id="site-footer">
         <div className={`${containerClassName} flex flex-wrap items-center justify-between gap-4 text-[13px] opacity-60`}>
-          <p>Prime Sports · Vintage Americana &amp; Prestige Sports Club</p>
-          <p>[Facility address] · [Contact]</p>
+          <p>© 2026 PrimeSports Clubhouse. All rights reserved.</p>
+          <p>Highway, Minglanilla, Cebu · [Contact]</p>
         </div>
       </footer>
     );
@@ -35,8 +35,7 @@ export default function SiteFooter({
               Prime Sports<span className="text-accent">.</span>
             </div>
             <p className="max-w-[40ch] text-[13px] opacity-60">
-              Vintage Americana &amp; Prestige Sports Club. An elite, beautifully
-              maintained community hub for serious players and passionate hobbyists.
+              Building communities, not just sports facilities.
             </p>
           </div>
           <div>
@@ -82,8 +81,8 @@ export default function SiteFooter({
           </div>
         </div>
         <div className="flex flex-wrap justify-between gap-3 border-t border-border pt-6 text-xs opacity-50">
-          <p>© [Year] Prime Sports. All rights reserved.</p>
-          <p>[Facility address] · [Contact]</p>
+          <p>© 2026 PrimeSports Clubhouse. All rights reserved.</p>
+          <p>Highway, Minglanilla, Cebu · [Contact]</p>
         </div>
       </div>
     </footer>

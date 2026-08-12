@@ -71,11 +71,14 @@ export const primeSectionTitleClass =
 export const primeSectionHeaderRowClass =
   "mb-6 flex flex-wrap items-end justify-between gap-3";
 
+// Both panels paint their own dark `bg-surface` — `text-foreground` is pinned here rather
+// than left to inherit, so they stay self-contained wherever they land (including on a
+// light-themed section, where the ambient ink flips to dark).
 export const primeSurfacePanelClass =
-  "rounded-[var(--radius)] border border-border bg-surface p-6 shadow-[var(--shadow-sm)]";
+  "rounded-[var(--radius)] border border-border bg-surface p-6 text-foreground shadow-[var(--shadow-sm)]";
 
 export const primeSurfaceCardClass =
-  "rounded-[var(--radius)] border border-border bg-surface shadow-[var(--shadow-sm)]";
+  "rounded-[var(--radius)] border border-border bg-surface text-foreground shadow-[var(--shadow-sm)]";
 
 export const primeToolbarIconButtonClass =
   "inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius)] border border-border bg-surface-muted text-sm text-foreground hover:border-accent-secondary hover:bg-surface disabled:pointer-events-none disabled:opacity-40";
@@ -93,24 +96,102 @@ export const primePlaceholderClass = `${primeEditorialAccentClass} text-muted/55
 
 export const courtNames = ["Court A", "Court B", "Court C", "Court D"];
 
-export const courtRates = [1200, 1200, 1500, 1500];
+export type SportKey = "pickleball" | "badminton";
+
+export type SportDefinition = {
+  key: SportKey;
+  label: string;
+  accentClass: string;
+  courtNames: string[];
+};
+
+function buildCourtNames(count: number) {
+  return Array.from({ length: count }, (_, index) => `Court ${index + 1}`);
+}
+
+/** The booking flow's own sport → court roster, separate from the legacy flat
+ *  `courtNames` above (which stays untouched for the admin dashboard and mock
+ *  generators below). Pickleball/Badminton share the same operating hours and
+ *  rate schedule — only the court roster differs per sport. */
+export const sports: SportDefinition[] = [
+  {
+    key: "pickleball",
+    label: "Pickleball",
+    accentClass: "text-accent-secondary",
+    courtNames: buildCourtNames(7),
+  },
+  {
+    key: "badminton",
+    label: "Badminton",
+    accentClass: "text-accent",
+    courtNames: buildCourtNames(4),
+  },
+];
+
+export function getSport(key: SportKey) {
+  return sports.find((sport) => sport.key === key) ?? sports[0];
+}
+
+/** "Pickleball · Court 1" — used anywhere sports could mix in a flat list (the
+ *  booking cart, the checkout summary). Grid column headers use the active
+ *  sport's short `courtNames` directly since the selected tab already
+ *  disambiguates which sport is being viewed. */
+export function getSportCourtLabel(sportKey: SportKey, courtIndex: number) {
+  const sport = getSport(sportKey);
+  return `${sport.label} · ${sport.courtNames[courtIndex] ?? "Court"}`;
+}
 
 export function formatCurrency(amount: number) {
   return `₱${amount.toLocaleString("en-PH")}`;
 }
 
-export const timeSlots = [
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-];
+export type RateKey = "weekday" | "weekend";
+
+export type RateWindow = {
+  label: string;
+  range: string;
+  rate: number;
+};
+
+/** Same schedule applies to every court — daytime runs 6AM–4PM, nighttime 4PM–2AM.
+ *  This is the single source of truth for court rates — the homepage pricing cards
+ *  and the booking flow both read from here so the numbers can never drift apart. */
+export const rateWindows: Record<RateKey, RateWindow[]> = {
+  weekday: [
+    { label: "Daytime Rate", range: "6:00 AM – 4:00 PM", rate: 450 },
+    { label: "Nighttime Rate", range: "4:00 PM – 2:00 AM", rate: 550 },
+  ],
+  weekend: [
+    { label: "Daytime Rate", range: "6:00 AM – 4:00 PM", rate: 550 },
+    { label: "Nighttime Rate", range: "4:00 PM – 2:00 AM", rate: 650 },
+  ],
+};
+
+export function getRateKey(date: Date): RateKey {
+  const day = date.getDay();
+  return day === 0 || day === 6 ? "weekend" : "weekday";
+}
+
+export function isDaytimeHour(hour24: number) {
+  return hour24 >= 6 && hour24 < 16;
+}
+
+export function getHourlyRate(date: Date, hour24: number) {
+  const windows = rateWindows[getRateKey(date)];
+  return isDaytimeHour(hour24) ? windows[0].rate : windows[1].rate;
+}
+
+/** Operating hours run 6:00 AM to 2:00 AM the next day — each entry is the 24-hour
+ *  start hour of an hourly slot, so the last slot (1:00 AM) closes out at 2:00 AM. */
+export const operatingHours = Array.from({ length: 20 }, (_, index) => (6 + index) % 24);
+
+export function formatHour12(hour24: number) {
+  const period = hour24 < 12 ? "AM" : "PM";
+  const hour = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${hour}:00 ${period}`;
+}
+
+export const timeSlots = operatingHours.map(formatHour12);
 
 export const monthNames = [
   "Jan",
@@ -138,21 +219,6 @@ export function getWeekStart(date: Date) {
   value.setHours(0, 0, 0, 0);
   value.setDate(value.getDate() - ((value.getDay() + 6) % 7));
   return value;
-}
-
-export function createOccupiedSlots() {
-  const occupied = new Set<string>();
-
-  timeSlots.forEach((_, timeIndex) => {
-    courtNames.forEach((_, courtIndex) => {
-      const hash = (timeIndex * 7 + courtIndex * 3 + 1) % 10;
-      if (hash < 3) {
-        occupied.add(`${timeIndex}-${courtIndex}`);
-      }
-    });
-  });
-
-  return occupied;
 }
 
 export function createQrPixelGrid(seed: number, size = 21) {

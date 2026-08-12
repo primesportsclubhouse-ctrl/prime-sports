@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { getPrimeContainerClassName, primeButtonOutlineClass } from "@/lib/prime-sports";
+import { getPrimeContainerClassName, primeButtonBaseClass, primeButtonOutlineClass } from "@/lib/prime-sports";
 
 import MobileNav from "@/components/prime-sports/layout/mobile-nav";
 import SkewCta from "@/components/prime-sports/ui/skew-cta";
@@ -99,6 +99,11 @@ export default function SiteHeader({
   const headerRef = useRef<HTMLElement | null>(null);
   const theme = useHeaderTheme(headerRef);
   const isLight = theme === "light";
+  // primeButtonOutlineClass hardcodes cream-on-transparent, which vanishes on a light
+  // header — swap in a dark-ink tone built from the same base spacing/sizing instead.
+  const homeLinkClassName = isLight
+    ? `${primeButtonBaseClass} border-canvas/70 bg-transparent text-canvas hover:border-accent hover:bg-[rgba(200,55,45,0.1)] hover:text-accent`
+    : primeButtonOutlineClass;
 
   return (
     <header
@@ -119,7 +124,7 @@ export default function SiteHeader({
         </Link>
 
         {simple ? (
-          <Link href="/" className={primeButtonOutlineClass}>
+          <Link href="/" className={homeLinkClassName}>
             <Home size={15} aria-hidden="true" />
             Home
           </Link>

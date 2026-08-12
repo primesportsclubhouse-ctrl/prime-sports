@@ -33,7 +33,10 @@ export default function PageIntro({
   const contentClassName = centered ? "mx-auto max-w-[60ch] text-center" : "";
 
   return (
-    <section className={sectionClassName}>
+    // Always the dark/blue title band — the adaptive header reads this via data-nav-theme
+    // so it stays dark while this section is behind it, then flips once the step content's
+    // cream band (see BookingSteps' wrapper) scrolls under it.
+    <section className={sectionClassName} data-nav-theme="dark">
       <div className={[containerClassName, layoutClassName].filter(Boolean).join(" ")}>
         <div className={contentClassName}>
           <p className={eyebrowClassName}>{eyebrow}</p>

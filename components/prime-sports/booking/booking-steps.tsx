@@ -31,7 +31,7 @@ export default function BookingSteps({ statuses, backHref, backLabel = "Back" }:
                   className={`inline-flex items-center gap-2.5 text-[13px] font-semibold transition-opacity duration-300 ${isFilled ? "opacity-100" : "opacity-70"}`}
                 >
                   <span
-                    className={`relative inline-flex size-[26px] items-center justify-center overflow-hidden rounded-full border text-[12px] font-bold transition-colors duration-300 ${isFilled ? "border-accent-secondary bg-accent-secondary text-canvas" : "border-border text-muted"}`}
+                    className={`relative inline-flex size-[26px] items-center justify-center overflow-hidden rounded-full border text-[12px] font-bold transition-colors duration-300 ${isFilled ? "border-accent-secondary bg-accent-secondary text-canvas" : "border-border opacity-55"}`}
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       {status === "done" ? (

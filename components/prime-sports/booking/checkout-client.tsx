@@ -10,10 +10,11 @@ import WaiverFormDialog from "@/components/prime-sports/booking/waiver-form-dial
 import { useToast } from "@/components/prime-sports/toast/toast-provider";
 import {
   BookingStepStatus,
-  courtNames,
-  courtRates,
   formatCurrency,
   formatPrimeDate,
+  getHourlyRate,
+  getSportCourtLabel,
+  operatingHours,
   primeButtonPrimaryClass,
   primeContainerClasses,
   primeMetaLabelClass,
@@ -37,7 +38,7 @@ const paymentChannels = [
 
 export default function CheckoutClient() {
   const { showToast } = useToast();
-  const { contact, schedule } = useReservation();
+  const { contact, bookings } = useReservation();
   const [activeChannelIndex, setActiveChannelIndex] = useState(0);
   const [upload, setUpload] = useState<UploadState | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -99,11 +100,13 @@ export default function CheckoutClient() {
   const panelClassName = primeSurfacePanelClass;
   const referenceDone = Boolean(reference.trim());
   const stepStatuses: BookingStepStatus[] = ["done", "done", "done", referenceDone ? "done" : "current"];
-  const rate = schedule ? courtRates[schedule.courtIndex] : null;
   const activeChannel = paymentChannels[activeChannelIndex];
+  const total = bookings.reduce((sum, item) => sum + getHourlyRate(item.date, operatingHours[item.timeIndex]), 0);
 
   return (
-    <>
+    // Cream band: everything from the step timeline down to (but not including) the
+    // footer — the page title above this stays on the default dark background.
+    <div className="bg-foreground text-canvas" data-nav-theme="light">
       <BookingSteps statuses={stepStatuses} backHref="/reserve/schedule" backLabel="Back to Schedule" />
 
       <section className={containerClassName} data-od-id="checkout-payment">
@@ -115,55 +118,54 @@ export default function CheckoutClient() {
             </div>
           </div>
 
-          <dl className="grid grid-cols-2 gap-5 max-[480px]:grid-cols-1">
-            <div className="col-span-2">
-              <dt className={primeMetaLabelClass}>Booked By</dt>
-              <dd className="m-0 text-[15px] font-semibold">
-                {contact ? contact.fullName : <span className={primePlaceholderClass}>[Full name]</span>}
-              </dd>
-              <dd className="m-0 mt-1 text-[13px] opacity-70">
-                {contact ? (
-                  `${contact.email} · ${contact.phone}`
-                ) : (
-                  <span className={primePlaceholderClass}>[Email · Phone]</span>
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt className={primeMetaLabelClass}>Date</dt>
-              <dd className="m-0 text-[15px] [font-family:var(--font-mono)] font-semibold tabular-nums">
-                {schedule ? formatPrimeDate(schedule.date) : <span className={primePlaceholderClass}>[Select a date]</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className={primeMetaLabelClass}>Court</dt>
-              <dd className="m-0 text-[15px] font-semibold">
-                {schedule ? courtNames[schedule.courtIndex] : <span className={primePlaceholderClass}>[Select a court]</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className={primeMetaLabelClass}>Time</dt>
-              <dd className="m-0 text-[15px] [font-family:var(--font-mono)] font-semibold tabular-nums">
-                {schedule ? timeSlots[schedule.timeIndex] : <span className={primePlaceholderClass}>[Select a time]</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className={primeMetaLabelClass}>Duration</dt>
-              <dd className="m-0 text-[15px] [font-family:var(--font-mono)] font-semibold tabular-nums">1 hour</dd>
-            </div>
-          </dl>
+          <div>
+            <p className={primeMetaLabelClass}>Booked By</p>
+            <p className="m-0 text-[15px] font-semibold">
+              {contact ? contact.fullName : <span className={primePlaceholderClass}>[Full name]</span>}
+            </p>
+            <p className="m-0 mt-1 text-[13px] opacity-70">
+              {contact ? (
+                `${contact.email} · ${contact.phone}`
+              ) : (
+                <span className={primePlaceholderClass}>[Email · Phone]</span>
+              )}
+            </p>
+          </div>
+
+          <div className="mt-5 border-t border-border pt-5">
+            {bookings.length === 0 ? (
+              <p className="text-sm">
+                <span className={primePlaceholderClass}>[No slots reserved yet — head back to schedule a court]</span>
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2.5" data-od-id="reservation-line-items">
+                {bookings.map((item) => {
+                  const rate = getHourlyRate(item.date, operatingHours[item.timeIndex]);
+                  const key = `${item.date.toDateString()}-${item.sport}-${item.courtIndex}-${item.timeIndex}`;
+
+                  return (
+                    <li
+                      key={key}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border border-border bg-canvas px-4 py-3 text-foreground"
+                    >
+                      <div className="flex flex-wrap items-center gap-3 text-[13px]">
+                        <span className="[font-family:var(--font-mono)] font-semibold tabular-nums">{formatPrimeDate(item.date)}</span>
+                        <span className="font-semibold">{getSportCourtLabel(item.sport, item.courtIndex)}</span>
+                        <span className="[font-family:var(--font-mono)] font-semibold tabular-nums">{timeSlots[item.timeIndex]}</span>
+                      </div>
+                      <span className="[font-family:var(--font-mono)] text-sm font-semibold tabular-nums">{formatCurrency(rate)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
 
           <div className="mt-6 rounded-[var(--radius)] border border-accent-secondary/40 bg-canvas p-5" data-od-id="reservation-total">
-            <div className="flex items-center justify-between text-sm opacity-70">
-              <span>Rate</span>
-              <span className="[font-family:var(--font-mono)] font-semibold tabular-nums">
-                {rate !== null ? `${formatCurrency(rate)} / hr` : <span className={primePlaceholderClass}>[Rate]</span>}
-              </span>
-            </div>
-            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-bold uppercase tracking-[0.04em]">Total Amount</span>
               <span className="text-2xl font-bold [font-family:var(--font-mono)] tabular-nums text-accent-secondary">
-                {rate !== null ? formatCurrency(rate) : <span className={primePlaceholderClass}>[Total]</span>}
+                {bookings.length ? formatCurrency(total) : <span className={primePlaceholderClass}>[Total]</span>}
               </span>
             </div>
           </div>
@@ -246,7 +248,7 @@ export default function CheckoutClient() {
             </div>
             <button
               type="button"
-              className={`w-full rounded-[var(--radius)] border-2 border-dashed px-6 py-10 text-center transition ${isDragging ? "border-accent-secondary bg-[rgba(212,163,89,0.12)]" : "border-border bg-surface-muted hover:border-accent-secondary hover:bg-[rgba(212,163,89,0.08)]"}`}
+              className={`w-full rounded-[var(--radius)] border-2 border-dashed px-6 py-10 text-center text-foreground transition ${isDragging ? "border-accent-secondary bg-[rgba(212,163,89,0.12)]" : "border-border bg-surface-muted hover:border-accent-secondary hover:bg-[rgba(212,163,89,0.08)]"}`}
               id="dropzone"
               onClick={() => fileInputRef.current?.click()}
               onDragEnter={(event) => {
@@ -283,7 +285,7 @@ export default function CheckoutClient() {
 
             {upload ? (
               <div className="mt-4" id="uploadStatus">
-                <div className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-3">
+                <div className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-3 text-foreground">
                   <div className="size-16 shrink-0 rounded-[var(--radius)] border border-border bg-[repeating-linear-gradient(45deg,var(--muted)_0_8px,var(--surface)_8px_16px)]" aria-hidden="true" />
                   <div className="flex-1">
                     <div className="text-[13px] font-semibold">{upload.name}</div>
@@ -347,6 +349,6 @@ export default function CheckoutClient() {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }

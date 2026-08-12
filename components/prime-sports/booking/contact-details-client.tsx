@@ -50,7 +50,9 @@ export default function ContactDetailsClient() {
   }
 
   return (
-    <>
+    // Cream band: everything from the step timeline down to (but not including) the
+    // footer — the page title above this stays on the default dark background.
+    <div className="bg-foreground text-canvas" data-nav-theme="light">
       <BookingSteps statuses={stepStatuses} />
 
       <section className={`${containerClassName} py-10`} data-od-id="contact-details">
@@ -126,6 +128,6 @@ export default function ContactDetailsClient() {
           </div>
         </form>
       </section>
-    </>
+    </div>
   );
 }
