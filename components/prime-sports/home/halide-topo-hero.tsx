@@ -418,10 +418,14 @@ export default function HalideTopoHero({
           preserve-3d is required here so the plate inherits the section's perspective.
           The frame below only ever translates (never rotates), so its bounding box
           stays a true reference for mapping the cursor onto the glare. */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
+      {/* On mobile the headline+subtext block and the CTA are pinned to fixed bands
+          (see the overlay grid below), so the plate's centring box is inset to the
+          leftover middle band instead of the full section — that reserves the plate
+          its own space instead of guessing an offset against the whole viewport. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 flex items-center justify-center [transform-style:preserve-3d] max-[640px]:top-[256px] max-[640px]:bottom-[108px]">
         <div
           ref={plateRef}
-          className="relative aspect-[16/9] w-[min(1120px,86vw)] [--plate-drop:0%] [--plate-shift:28%] [transform-style:preserve-3d] max-[900px]:[--plate-shift:16%] max-[640px]:w-[112vw] max-[640px]:[--plate-drop:-32%] max-[640px]:[--plate-shift:0%]"
+          className="relative aspect-[16/9] w-[min(1120px,86vw)] [--plate-drop:0%] [--plate-shift:28%] [transform-style:preserve-3d] max-[900px]:[--plate-shift:16%] max-[640px]:w-[112vw] max-[640px]:[--plate-shift:0%]"
           style={{
             transform: "translate(var(--plate-shift), var(--plate-drop))",
             transition: layerTransition,
@@ -548,7 +552,7 @@ export default function HalideTopoHero({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-wrap items-end justify-between gap-8 max-[640px]:gap-7"
+          className="flex flex-wrap items-end justify-between gap-8 max-[640px]:flex-col max-[640px]:flex-nowrap max-[640px]:items-start max-[640px]:gap-7"
         >
           <div className={`${primeMonoValueClass} max-w-[60ch] text-[12px] uppercase leading-[1.7] tracking-[0.1em] text-foreground/55`}>
             <span className="block text-foreground/75">{tag}</span>
