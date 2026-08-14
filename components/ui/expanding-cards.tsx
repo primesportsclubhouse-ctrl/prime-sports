@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 
@@ -19,7 +19,8 @@ export type CardItem = {
   id: string | number;
   title: string;
   description: string;
-  media: CardMedia;
+  /** Omit while the real photo/clip is still outstanding — the card renders `fallback` instead. */
+  media?: CardMedia;
   /** Optional lucide icon (or any node) revealed with the expanded content. */
   icon?: ReactNode;
   /** Optional short mono sub-label, e.g. "4 courts · 24m ceiling". */
@@ -32,6 +33,11 @@ type ExpandingCardsProps = {
   items: CardItem[];
   /** Index expanded on first paint; `null` starts evenly split. */
   defaultActiveIndex?: number | null;
+  /**
+   * Decorative mark shown on a branded ground for any card with no `media`, or
+   * whose media fails to load. Typically the brand logo.
+   */
+  fallbackMark?: string | StaticImageData;
   className?: string;
   /** Accessible name for the list. */
   label?: string;
@@ -57,19 +63,44 @@ function usePrefersReducedMotion() {
 const mediaClassName =
   "absolute inset-0 h-full w-full scale-110 object-cover grayscale transition-[transform,filter] duration-500 ease-out group-data-[active=true]:scale-100 group-data-[active=true]:grayscale-0";
 
+/**
+ * Placeholder ground for cards awaiting real photography. Purely decorative —
+ * the card's own title and description carry the meaning, so the mark is hidden
+ * from assistive tech rather than given a redundant alt.
+ */
+function CardFallback({ mark }: { mark?: string | StaticImageData }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute inset-0 flex items-center justify-center p-4 bg-[radial-gradient(circle_at_50%_42%,rgba(212,163,89,0.12),transparent_62%),linear-gradient(150deg,var(--surface-muted)_0%,var(--canvas)_80%)]"
+    >
+      {mark ? (
+        <div className="relative aspect-[3/2] w-full max-w-[180px] opacity-30 transition-opacity duration-500 ease-out group-data-[active=true]:opacity-55">
+          <Image src={mark} alt="" fill sizes="180px" className="object-contain" />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CardMediaLayer({
   media,
   title,
   active,
   priority,
+  fallbackMark,
 }: {
-  media: CardMedia;
+  media?: CardMedia;
   title: string;
   active: boolean;
   priority: boolean;
+  fallbackMark?: string | StaticImageData;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
+  // Safety net for a path that 404s (asset not dropped in yet, bad filename) so a
+  // missing file degrades to the branded ground instead of a broken-image icon.
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -86,6 +117,10 @@ function CardMediaLayer({
     }
   }, [active, prefersReducedMotion]);
 
+  if (!media || failed) {
+    return <CardFallback mark={fallbackMark} />;
+  }
+
   if (media.type === "video") {
     return (
       <video
@@ -99,6 +134,7 @@ function CardMediaLayer({
         playsInline
         preload="metadata"
         tabIndex={-1}
+        onError={() => setFailed(true)}
       />
     );
   }
@@ -111,6 +147,7 @@ function CardMediaLayer({
       fill
       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 720px"
       priority={priority}
+      onError={() => setFailed(true)}
     />
   );
 }
@@ -118,6 +155,7 @@ function CardMediaLayer({
 export function ExpandingCards({
   items,
   defaultActiveIndex = 0,
+  fallbackMark,
   className,
   label,
   ref,
@@ -174,6 +212,7 @@ export function ExpandingCards({
               title={item.title}
               active={active}
               priority={index === defaultActiveIndex}
+              fallbackMark={fallbackMark}
             />
 
             <div

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, type CSSProperties, type PointerEvent } from "react";
 
 import courtPlate from "@/public/prime-sports/prime-core-court.jpeg";
@@ -379,7 +380,7 @@ export default function HalideTopoHero({
       ref={stageRef}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      className="relative isolate overflow-hidden border-b border-border bg-canvas [perspective-origin:50%_50%] [perspective:1500px] max-[900px]:[perspective:2200px]"
+      className="relative isolate flex min-h-svh flex-col overflow-hidden border-b border-border bg-canvas [perspective-origin:50%_50%] [perspective:1500px] max-[900px]:[perspective:2200px]"
       style={
         {
           "--mx": 0,
@@ -502,28 +503,43 @@ export default function HalideTopoHero({
         </div>
       </div>
 
-      {/* Overlay content — fully static: no tilt, no parallax, always horizontal */}
+      {/* Overlay content — fully static: no tilt, no parallax, always horizontal.
+          Stretches to fill whatever height the section actually ends up at (at least
+          one full small-viewport, via min-h-svh above), so the hero's own background
+          always reaches the bottom of the fold — no next-section sliver on load. */}
       <div
-        className={`${getPrimeContainerClassName("wide")} relative z-10 grid min-h-[max(620px,86svh)] grid-rows-[auto_1fr_auto] gap-12 py-16 max-[640px]:min-h-[560px] max-[640px]:gap-10 max-[640px]:py-12`}
+        className={`${getPrimeContainerClassName("wide")} relative z-10 grid flex-1 grid-rows-[auto_1fr_auto] gap-12 py-16 max-[640px]:gap-10 max-[640px]:py-12`}
       >
         {/* Vertically centred on wide screens; pinned to the top on phones so the
-            headline clears the court plate instead of sitting on top of it. */}
+            headline clears the court plate instead of sitting on top of it. This is a
+            one-time mount entrance (not scroll-triggered — it's above the fold), kept
+            separate from the plate's own tilt/glare/ball motion, which stays untouched. */}
         <div className="flex items-center max-[640px]:items-start">
-          <h1 className={`${primeHeadingBaseClass} text-[clamp(56px,13vw,150px)] font-extrabold leading-[0.86] tracking-[0.02em] text-foreground [text-shadow:0_18px_48px_rgba(2,8,18,0.45)]`}>
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className={`${primeHeadingBaseClass} text-[clamp(56px,13vw,150px)] font-extrabold leading-[0.86] tracking-[0.02em] text-foreground [text-shadow:0_18px_48px_rgba(2,8,18,0.45)]`}
+          >
             {headlineTop}
             <br />
             {headlineBottom}
-          </h1>
+          </motion.h1>
         </div>
 
-        <div className="flex flex-wrap items-end justify-between gap-8 max-[640px]:gap-7">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-wrap items-end justify-between gap-8 max-[640px]:gap-7"
+        >
           <div className={`${primeMonoValueClass} max-w-[60ch] text-[12px] uppercase leading-[1.7] tracking-[0.1em] text-foreground/55`}>
             <span className="block text-foreground/75">{tag}</span>
             <span className="block whitespace-nowrap">{caption}</span>
           </div>
 
           <SkewCta href={ctaHref}>{ctaLabel}</SkewCta>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

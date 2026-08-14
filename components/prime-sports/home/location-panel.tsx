@@ -1,4 +1,10 @@
+"use client";
+
 import { Clock, MapPin } from "lucide-react";
+import { motion } from "motion/react";
+import { useState } from "react";
+
+import { primeSidelineStripeClass } from "@/lib/prime-sports";
 
 const MAPS_EMBED_SRC = "https://www.google.com/maps?q=PrimeSports+Clubhouse+Minglanilla&ll=10.2417885,123.7835417&z=17&output=embed";
 
@@ -24,10 +30,20 @@ const details = [
 ];
 
 export default function LocationPanel() {
+  const [mapLoaded, setMapLoaded] = useState(false);
+
   return (
-    <div className="grid grid-cols-[1.05fr_1fr] items-stretch gap-5 max-[920px]:grid-cols-1">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+      className="grid grid-cols-[1.05fr_1fr] items-stretch gap-5 max-[920px]:grid-cols-1"
+    >
       <div className="relative min-h-[320px] overflow-hidden rounded-[var(--radius)] border border-border shadow-[var(--shadow-sm)] max-[640px]:min-h-[240px]">
-        <iframe
+        {/* Faded in on the iframe's own load event (not scroll position) so the map
+            never pops in mid-tile-render. */}
+        <motion.iframe
           src={MAPS_EMBED_SRC}
           title="Map showing the Prime Sports Clubhouse location in Minglanilla, Cebu"
           aria-label="Map showing the Prime Sports Clubhouse location in Minglanilla, Cebu"
@@ -35,13 +51,21 @@ export default function LocationPanel() {
           style={{ border: 0 }}
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
+          onLoad={() => setMapLoaded(true)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: mapLoaded ? 1 : 0 }}
+          transition={{ duration: 0.28, ease: "easeOut" }}
         />
       </div>
 
-      <div className="flex flex-col overflow-hidden rounded-[var(--radius)] border border-border border-t-2 border-t-accent-secondary bg-surface shadow-[var(--shadow-sm)]">
+      <div className="relative flex flex-col overflow-hidden rounded-[var(--radius)] border border-border bg-surface shadow-[var(--shadow-sm)]">
+        {/* Sideline stripe replaces the old flat accent-on-rounded top border. */}
+        <span aria-hidden="true" className={primeSidelineStripeClass} />
+
+        {/* "Visit the Club" eyebrow removed — it only restated the section header
+            above this panel ("Location" / "Find us."); the heading speaks on its own. */}
         <div className="border-b border-border px-7 py-6 max-[640px]:px-5 max-[640px]:py-5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-60">Visit the Club</span>
-          <h3 className="mt-2 [font-family:var(--font-heading)] text-[26px] font-extrabold tracking-[0.06em] max-[640px]:text-[22px]">
+          <h3 className="[font-family:var(--font-heading)] text-[26px] font-extrabold tracking-[0.06em] max-[640px]:text-[22px]">
             PrimeSports Clubhouse
           </h3>
         </div>
@@ -87,6 +111,6 @@ export default function LocationPanel() {
           <span aria-hidden="true">→</span>
         </a>
       </div>
-    </div>
+    </motion.div>
   );
 }

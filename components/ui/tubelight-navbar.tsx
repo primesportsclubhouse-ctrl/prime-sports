@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Building2, CircleDollarSign, CircleHelp, CircleSlash, MapPin } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 

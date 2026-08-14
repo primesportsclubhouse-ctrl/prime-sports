@@ -10,11 +10,26 @@ import {
 
 const SCROLL_THRESHOLD_PX = 4;
 
-export default function WaiverFormDialog() {
+type WaiverFormDialogProps = {
+  /** Server-persisted acceptance state (from `bookings.waiver_accepted`),
+   *  not local-only anymore — see /api/bookings/[id]/waiver. */
+  isAccepted: boolean;
+  /** Disabled entirely until there's at least one booking to attach the
+   *  acceptance to. */
+  disabled?: boolean;
+  /** Persists the acceptance for every booking in the current checkout via
+   *  /api/bookings/[id]/waiver. Rejecting the returned promise (ok: false)
+   *  keeps the dialog open with an inline error instead of optimistically
+   *  closing. */
+  onAccept: () => Promise<{ ok: boolean; error?: string }>;
+};
+
+export default function WaiverFormDialog({ isAccepted, disabled = false, onAccept }: WaiverFormDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
-  const [isAccepted, setIsAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -45,6 +60,11 @@ export default function WaiverFormDialog() {
   }, [isOpen]);
 
   function openDialog() {
+    if (disabled) {
+      return;
+    }
+
+    setSubmitError(null);
     setHasScrolledToEnd(isAccepted);
     setIsChecked(isAccepted);
     setIsOpen(true);
@@ -66,12 +86,23 @@ export default function WaiverFormDialog() {
     setIsChecked(isAccepted);
   }
 
-  function handleAccept() {
-    if (!isChecked) {
+  async function handleAccept() {
+    if (!isChecked || isSubmitting) {
       return;
     }
 
-    setIsAccepted(true);
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const result = await onAccept();
+
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setSubmitError(result.error ?? "Could not save your acceptance. Please try again.");
+      return;
+    }
+
     setIsOpen(false);
   }
 
@@ -79,6 +110,7 @@ export default function WaiverFormDialog() {
     <>
       <button
         type="button"
+        disabled={disabled}
         className={`${primeButtonOutlineClass} ${isAccepted ? "border-success text-success hover:border-success hover:bg-[rgba(34,197,94,0.12)] hover:text-success" : ""}`}
         onClick={openDialog}
       >
@@ -177,18 +209,24 @@ export default function WaiverFormDialog() {
                 </span>
               </label>
 
+              {submitError ? (
+                <p role="alert" className="mt-3 text-xs font-medium text-accent">
+                  {submitError}
+                </p>
+              ) : null}
+
               <div className="mt-5 flex flex-wrap justify-end gap-3">
-                <button type="button" className={primeButtonOutlineClass} onClick={handleDecline}>
+                <button type="button" className={primeButtonOutlineClass} onClick={handleDecline} disabled={isSubmitting}>
                   Decline
                 </button>
                 <button
                   type="button"
                   className={primeButtonPrimaryClass}
-                  aria-disabled={!isChecked}
-                  disabled={!isChecked}
-                  onClick={handleAccept}
+                  aria-disabled={!isChecked || isSubmitting}
+                  disabled={!isChecked || isSubmitting}
+                  onClick={() => void handleAccept()}
                 >
-                  Accept
+                  {isSubmitting ? "Saving…" : "Accept"}
                 </button>
               </div>
             </div>

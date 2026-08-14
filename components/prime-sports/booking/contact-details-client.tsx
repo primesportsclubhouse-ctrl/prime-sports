@@ -24,10 +24,29 @@ const labelClassName = "mb-1.5 block text-[11px] font-bold uppercase tracking-[0
 export default function ContactDetailsClient() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { setContact } = useReservation();
+  const { contact, setContact } = useReservation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  // Tracks which `contact` value these fields were last filled from, so the
+  // sync below only fires when it actually changes (once for the
+  // localStorage-recovered value already available at mount, and again if a
+  // slower server hydration supplies a different one) instead of clobbering
+  // in-progress typing on every render.
+  const [appliedContact, setAppliedContact] = useState<typeof contact>(null);
+
+  // Adjusting state during render (not in an effect) when a prop/context
+  // value changes is the pattern React's own docs recommend for this exact
+  // "pre-fill local editable state from an external value" case — see
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes.
+  // This closes the "refresh loses everything" gap for this step too, not
+  // just the later ones that have a server-side booking row to hydrate from.
+  if (contact && contact !== appliedContact) {
+    setAppliedContact(contact);
+    setFullName(contact.fullName);
+    setEmail(contact.email);
+    setPhone(contact.phone);
+  }
 
   const isReady = Boolean(fullName.trim() && email.trim() && phone.trim());
   const containerClassName = primeContainerClasses.default;

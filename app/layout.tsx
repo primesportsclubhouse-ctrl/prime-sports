@@ -7,6 +7,7 @@ import {
   Playfair_Display,
   Plus_Jakarta_Sans,
 } from "next/font/google";
+import { MotionConfig } from "motion/react";
 import "./globals.css";
 
 import { ReservationProvider } from "@/components/prime-sports/booking/reservation-provider";
@@ -66,9 +67,14 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${inter.variable} ${montserrat.variable} ${jetBrainsMono.variable} ${instrumentSerif.variable} ${playfairDisplay.variable}`}
     >
       <body>
-        <ReservationProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </ReservationProvider>
+        {/* reducedMotion="user" makes every motion.* component site-wide respect the
+            OS's prefers-reduced-motion setting automatically: transform/layout motion
+            drops out, opacity and color transitions still play. */}
+        <MotionConfig reducedMotion="user">
+          <ReservationProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </ReservationProvider>
+        </MotionConfig>
       </body>
     </html>
   );

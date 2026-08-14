@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 
-import AdminDashboard from "@/components/prime-sports/admin/admin-dashboard";
 import AdminShell from "@/components/prime-sports/admin/admin-shell";
+import MasterCalendar from "@/components/prime-sports/admin/master-calendar";
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | Prime Sports",
-  description: "Staff dashboard for master court scheduling and payment verification review.",
+  title: "Master Calendar | Prime Sports Admin",
+  description: "Staff dashboard for master court scheduling across Pickleball and Badminton.",
 };
 
 export default function AdminDashboardPage() {
   return (
     <AdminShell
       currentPath="/admin/dashboard"
-      title="Administration"
-      description="Master calendar and manual payment verification queue for staff operations."
+      title="Master Calendar"
+      description="Daily schedule across every court, split by sport. Click a booking to review its submitted details."
     >
-      <AdminDashboard />
+      <MasterCalendar />
     </AdminShell>
   );
 }

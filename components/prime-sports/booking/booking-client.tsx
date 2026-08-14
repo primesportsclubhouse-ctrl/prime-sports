@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,6 +10,9 @@ import {
   useReservation,
 } from "@/components/prime-sports/booking/reservation-provider";
 import { useToast } from "@/components/prime-sports/toast/toast-provider";
+import type { AvailabilityCourt, AvailabilityDay, SlotAvailability } from "@/lib/booking";
+import { toDateString } from "@/lib/booking";
+import { useRealtimeRefresh } from "@/lib/supabase/realtime";
 import {
   BookingStepStatus,
   SportKey,
@@ -40,6 +43,52 @@ function toDateKey(date: Date) {
   return date.toDateString();
 }
 
+/** Pure fetch+reshape helper (no setState of its own) so both the
+ *  date/sport-change effect and the realtime-triggered refresh below can
+ *  share one implementation without either of them calling a
+ *  state-setting function reference directly from inside a bare
+ *  `useEffect(...)` body — see the inline-IIFE convention already used by
+ *  reservation-provider.tsx / verification-queue.tsx for why that matters
+ *  under this project's react-hooks lint rules. Returns an empty map on any
+ *  failure; callers treat that the same as "no live data yet", not as an
+ *  error to surface — addBooking()'s own 409 handling remains the actual
+ *  correctness guarantee either way. */
+async function loadAvailabilityMap(date: Date, sport: SportKey): Promise<Map<number, Record<number, SlotAvailability>>> {
+  const next = new Map<number, Record<number, SlotAvailability>>();
+
+  try {
+    const response = await fetch(
+      `/api/availability?date=${encodeURIComponent(toDateString(date))}&sport=${encodeURIComponent(sport)}`,
+    );
+
+    if (!response.ok) {
+      return next;
+    }
+
+    const data = (await response.json()) as { courts?: AvailabilityCourt[]; days?: AvailabilityDay[] };
+    const courtIndexById = new Map((data.courts ?? []).map((court) => [court.id, court.courtIndex]));
+
+    for (const day of data.days ?? []) {
+      for (const slot of day.slots) {
+        const perCourt: Record<number, SlotAvailability> = {};
+
+        for (const [courtId, status] of Object.entries(slot.courts)) {
+          const courtIndex = courtIndexById.get(courtId);
+          if (courtIndex !== null && courtIndex !== undefined) {
+            perCourt[courtIndex] = status;
+          }
+        }
+
+        next.set(slot.hour24, perCourt);
+      }
+    }
+  } catch {
+    // Offline/unreachable API — non-fatal, see doc comment above.
+  }
+
+  return next;
+}
+
 function sameItem(a: BookingLineItem, b: BookingLineItem) {
   return (
     toDateKey(a.date) === toDateKey(b.date) &&
@@ -58,17 +107,69 @@ const COURT_COLUMN_PX = 150;
 export default function BookingClient() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { setBookings } = useReservation();
+  const { contact, bookings: selections, addBooking, removeBooking } = useReservation();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(today));
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [activeDateKey, setActiveDateKey] = useState<string | null>(null);
-  const [selections, setSelections] = useState<BookingLineItem[]>([]);
   const [activeSport, setActiveSport] = useState<SportKey>("pickleball");
   const dragRef = useRef({ isDown: false, startX: 0, scrollLeft: 0, moved: false });
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [lastSyncedSelections, setLastSyncedSelections] = useState(selections);
+  const [hasJumpedToHydratedWeek, setHasJumpedToHydratedWeek] = useState(false);
+  // Per-hour24, per-courtIndex live status for the active date/sport — other
+  // guests' held/confirmed slots, not this session's own selections (those
+  // are tracked separately via `selections` and always render as "selected").
+  // Refetched on date/sport change and again whenever the realtime
+  // subscription below signals a `bookings`/`slot_holds` change.
+  const [availabilityByHour, setAvailabilityByHour] = useState<Map<number, Record<number, SlotAvailability>>>(
+    new Map(),
+  );
+
+  // Adjusting state during render (not in an effect) when `selections`
+  // changes is the pattern React's docs recommend for this — see
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes.
+  // Any selection's date is folded into `selectedDates` if it's missing (so
+  // its chip/count shows up) — this matters for slots rehydrated from the
+  // server after a refresh, which never went through handleDayClick locally.
+  if (selections !== lastSyncedSelections) {
+    setLastSyncedSelections(selections);
+
+    if (selections.length > 0) {
+      setSelectedDates((prev) => {
+        const existingKeys = new Set(prev.map((d) => toDateKey(d)));
+        const missing: Date[] = [];
+        const seen = new Set<string>();
+
+        for (const selection of selections) {
+          const key = toDateKey(selection.date);
+          if (!existingKeys.has(key) && !seen.has(key)) {
+            seen.add(key);
+            missing.push(selection.date);
+          }
+        }
+
+        if (missing.length === 0) {
+          return prev;
+        }
+
+        return [...prev, ...missing].sort((a, b) => a.getTime() - b.getTime());
+      });
+
+      setActiveDateKey((prev) => prev ?? toDateKey(selections[0].date));
+
+      // Only jump the visible week once, right after rehydration — otherwise
+      // this would yank the calendar back every time a slot is added while
+      // the user is deliberately browsing a different week.
+      if (!hasJumpedToHydratedWeek) {
+        setHasJumpedToHydratedWeek(true);
+        const earliest = selections.reduce((min, item) => (item.date < min ? item.date : min), selections[0].date);
+        setWeekStart(getWeekStart(earliest));
+      }
+    }
+  }
 
   // Switching sport swaps to a narrower/wider grid — reset horizontal scroll so the
   // new column set never opens mid-scroll or partially off-screen.
@@ -82,6 +183,48 @@ export default function BookingClient() {
   const activeSportCourts = getSport(activeSport).courtNames;
   const gridTemplateColumns = `${TIME_COLUMN_PX}px repeat(${activeSportCourts.length}, minmax(${COURT_COLUMN_PX}px, 1fr))`;
   const minTableWidth = TIME_COLUMN_PX + activeSportCourts.length * COURT_COLUMN_PX;
+
+  // GET /api/availability for just the active date/sport — the same
+  // court/rate-card/booking data the backend already computes, scoped down
+  // to what this view needs to gray out slots someone else already holds or
+  // has confirmed. Failures here are non-fatal: the grid just keeps showing
+  // the last-known state, and addBooking()'s existing 409 handling below
+  // remains the actual source of truth for whether a click succeeds.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const next = activeDate
+        ? await loadAvailabilityMap(activeDate, activeSport)
+        : new Map<number, Record<number, SlotAvailability>>();
+
+      if (!cancelled) {
+        setAvailabilityByHour(next);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDate, activeSport]);
+
+  // Live updates: someone else booking/holding/cancelling a slot on this
+  // date should regray/reopen the grid without the guest needing to reselect
+  // a date or refresh. Falls back to polling internally if the realtime
+  // channel never subscribes (or drops) — see lib/supabase/realtime.ts. This
+  // callback isn't invoked from a bare `useEffect` body in this component
+  // (it fires from inside useRealtimeRefresh's own effect instead), so it can
+  // safely await-then-setState the same way the effect above does.
+  useRealtimeRefresh("booking-availability", ["bookings", "slot_holds"], () => {
+    if (!activeDate) {
+      return;
+    }
+
+    void (async () => {
+      const next = await loadAvailabilityMap(activeDate, activeSport);
+      setAvailabilityByHour(next);
+    })();
+  });
 
   // Click-and-drag horizontal scrolling for mouse users (touch/trackpad already scroll
   // natively via overflow-x-auto). A capturing click handler swallows the click that
@@ -153,15 +296,17 @@ export default function BookingClient() {
     }
 
     if (activeDateKey === key) {
-      const removedCount = selections.filter((s) => toDateKey(s.date) === key).length;
+      const toRemove = selections.filter((s) => toDateKey(s.date) === key);
       const remaining = selectedDates.filter((d) => toDateKey(d) !== key);
       setSelectedDates(remaining);
-      setSelections((prev) => prev.filter((s) => toDateKey(s.date) !== key));
       setActiveDateKey(remaining.length ? toDateKey(remaining[0]) : null);
+      toRemove.forEach((item) => {
+        void removeBooking(item);
+      });
       showToast({
         title: "Date removed",
-        description: removedCount
-          ? `${formatPrimeDate(date)} · ${removedCount} slot${removedCount > 1 ? "s" : ""} cleared`
+        description: toRemove.length
+          ? `${formatPrimeDate(date)} · ${toRemove.length} slot${toRemove.length > 1 ? "s" : ""} cleared`
           : formatPrimeDate(date),
       });
       return;
@@ -170,21 +315,46 @@ export default function BookingClient() {
     setActiveDateKey(key);
   }
 
-  function handleSlotClick(courtIndex: number, timeIndex: number) {
+  async function handleSlotClick(courtIndex: number, timeIndex: number) {
     if (!activeDate) {
       return;
     }
 
     const candidate: BookingLineItem = { date: activeDate, sport: activeSport, courtIndex, timeIndex };
-    const exists = selections.some((s) => sameItem(s, candidate));
+    const existing = selections.find((s) => sameItem(s, candidate));
 
-    if (exists) {
-      setSelections((prev) => prev.filter((s) => !sameItem(s, candidate)));
+    if (existing) {
+      await removeBooking(existing);
       return;
     }
 
-    setSelections((prev) => [...prev, candidate]);
+    const liveStatus = availabilityByHour.get(operatingHours[timeIndex])?.[courtIndex] ?? "open";
+    if (liveStatus !== "open") {
+      // Belt-and-suspenders alongside the disabled button below — the
+      // authoritative check either way is addBooking()'s 409 handling via
+      // the bookings table's unique composite index, this just avoids a
+      // pointless round-trip when the live grid already shows it's taken.
+      showToast({ title: "Slot unavailable", description: "That slot was just taken — pick another." });
+      return;
+    }
+
+    if (!contact) {
+      showToast({
+        title: "Contact details needed",
+        description: "Please fill out your contact details before picking a slot.",
+      });
+      router.push("/reserve");
+      return;
+    }
+
     const rate = getHourlyRate(activeDate, operatingHours[timeIndex]);
+    const result = await addBooking(candidate);
+
+    if (!result.ok) {
+      showToast({ title: "Slot unavailable", description: result.error });
+      return;
+    }
+
     showToast({
       title: "Slot added",
       description: `${getSportCourtLabel(activeSport, courtIndex)} · ${timeSlots[timeIndex]} · ${formatCurrency(rate)}`,
@@ -192,7 +362,7 @@ export default function BookingClient() {
   }
 
   function removeSelection(item: BookingLineItem) {
-    setSelections((prev) => prev.filter((s) => !sameItem(s, item)));
+    void removeBooking(item);
   }
 
   const sortedSelections = [...selections].sort(
@@ -309,6 +479,9 @@ export default function BookingClient() {
             <span className="inline-flex items-center gap-2 text-xs opacity-80">
               <span className="size-4 rounded border border-accent-secondary bg-accent" />Selected
             </span>
+            <span className="inline-flex items-center gap-2 text-xs opacity-80">
+              <span className="size-4 rounded border border-border bg-surface-muted opacity-60" />Unavailable
+            </span>
           </div>
         </div>
 
@@ -378,16 +551,27 @@ export default function BookingClient() {
                             const selected = selections.some(
                               (s) => sameItem(s, { date: activeDate, sport: activeSport, courtIndex, timeIndex }),
                             );
+                            const liveStatus: SlotAvailability =
+                              availabilityByHour.get(operatingHours[timeIndex])?.[courtIndex] ?? "open";
+                            const isTakenByOther = !selected && liveStatus !== "open";
 
                             return (
                               <button
                                 key={`${court}-${time}`}
                                 type="button"
-                                className={`min-h-11 px-2 py-2.5 text-center text-xs font-semibold [font-family:var(--font-mono)] tabular-nums transition ${selected ? "bg-accent text-canvas" : "bg-surface text-foreground hover:bg-[rgba(212,163,89,0.12)] hover:text-foreground"}`}
-                                onClick={() => handleSlotClick(courtIndex, timeIndex)}
+                                disabled={isTakenByOther}
+                                aria-disabled={isTakenByOther}
+                                className={`min-h-11 px-2 py-2.5 text-center text-xs font-semibold [font-family:var(--font-mono)] tabular-nums transition ${
+                                  selected
+                                    ? "bg-accent text-canvas"
+                                    : isTakenByOther
+                                      ? "cursor-not-allowed bg-surface-muted text-inactive opacity-60"
+                                      : "bg-surface text-foreground hover:bg-[rgba(212,163,89,0.12)] hover:text-foreground"
+                                }`}
+                                onClick={() => void handleSlotClick(courtIndex, timeIndex)}
                               >
                                 {selected ? "✓ " : ""}
-                                {formatCurrency(rate)}
+                                {isTakenByOther ? (liveStatus === "booked" ? "Booked" : "Held") : formatCurrency(rate)}
                               </button>
                             );
                           })}
@@ -463,7 +647,9 @@ export default function BookingClient() {
                     return;
                   }
 
-                  setBookings(selections);
+                  // Selections are already persisted as `held` bookings one
+                  // at a time as they're picked (see addBooking() in
+                  // reservation-provider.tsx) — nothing left to sync here.
                   showToast({
                     title: "Schedule confirmed",
                     description: `${selections.length} slot${selections.length > 1 ? "s" : ""} · proceeding to payment.`,

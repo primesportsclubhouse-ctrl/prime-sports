@@ -1,105 +1,82 @@
-import { Building2, Dumbbell, LandPlot, Moon, Sofa, Trophy } from "lucide-react";
+"use client";
+
+import { motion } from "motion/react";
 
 import { ExpandingCards, type CardItem } from "@/components/ui/expanding-cards";
 
-const iconSize = 22;
+import fallbackMark from "@/public/prime-sports/header-logo.png";
 
 /**
  * Facility gallery cards.
  *
- * Each card takes a `media` payload that is either an image or a video:
+ * Cards with no `media` key fall back to the club crest on a branded ground, so
+ * the gallery stays presentable until the real photography lands. To fill one in,
+ * drop the asset into `public/prime-sports/` and uncomment its `media` block:
  *
- *   media: { type: "image", src: "/prime-sports/covered-court.jpg", alt: "…" }
+ *   media: { type: "image", src: "/prime-sports/badminton-courts.jpg", alt: "…" }
  *   media: { type: "video", src: "/prime-sports/court-tour.mp4", poster: "/prime-sports/court-tour.jpg" }
  *
  * Video cards autoplay (muted, looped) while the card is hovered/focused and
- * pause the moment it is not. Drop an `.mp4`/`.webm` into `public/prime-sports/`
- * and switch the `type` to `"video"` — no other change is needed.
+ * pause the moment it is not — no other change is needed to switch a card over.
  */
 const facilityCards: CardItem[] = [
   {
     id: "pickeball-courts",
     title: "Pickleball Courts",
-    description:
-      "International Standard Silica Sand Surfaces",
-    media: {
-      type: "image",
-      src: "/prime-sports/prime-core-court.jpeg",
-      alt: "Prime Sports covered championship court",
-    },
+    description: "International Standard Silica Sand Surfaces",
+    // media: { type: "image", src: "/prime-sports/pickleball-courts.jpg", alt: "Pickleball courts at PrimeSports" },
     meta: "7 courts",
   },
   {
     id: "badminton-courts",
     title: "Badminton Courts",
-    description:
-      "International Standard Taraflex Surfaces",
-    media: {
-      type: "image",
-      src: "https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&w=1400&q=80",
-      alt: "Indoor badminton show court",
-    },
+    description: "International Standard Taraflex Surfaces",
+    // media: { type: "image", src: "/prime-sports/badminton-courts.jpg", alt: "Indoor badminton courts" },
     meta: "4 courts",
   },
   {
     id: "players-lounge",
     title: "Players' Lounge (AC)",
-    description:
-      "Comfortable seating for players waiting on the next slot.",
-    media: {
-      type: "image",
-      src: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1400&q=80",
-      alt: "Outdoor sports courts at Prime Sports",
-    },
-    // meta: "[N] courts · [Surface]",
+    description: "Comfortable seating for players waiting on the next slot.",
+    // media: { type: "image", src: "/prime-sports/players-lounge.jpg", alt: "Air-conditioned players' lounge" },
   },
   {
     id: "multi-purpose-area",
     title: "Multi-Purpose Area",
-    description:
-      "Open space for warm-ups and footwork drills sessions between games.",
-    media: {
-      type: "image",
-      src: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1400&q=80",
-      alt: "Court under evening floodlights",
-    },
-    // icon: <Moon size={iconSize} />,
-    // meta: "[Time range] · Peak",
+    description: "Open space for warm-ups and footwork drills sessions between games.",
+    // media: { type: "image", src: "/prime-sports/multi-purpose-area.jpg", alt: "Multi-purpose warm-up area" },
   },
   {
     id: "food-park",
     title: "Food Park",
-    description:
-      "Refreshments and light meals for players and visitors.",
-    media: {
-      type: "image",
-      src: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1400&q=80",
-      alt: "Court-side training and conditioning zone",
-    },
-    // icon: <Dumbbell size={iconSize} />,
-    // meta: "Open [Open]–[Close]",
+    description: "Refreshments and light meals for players and visitors.",
+    // media: { type: "image", src: "/prime-sports/food-park.jpg", alt: "Food park beside the courts" },
   },
   {
     id: "toilet-shower-room",
     title: "AC Toilet & Shower Room",
-    description:
-      "Clean and well-maintained facilities for player convenience.",
-    media: {
-      type: "image",
-      src: "https://images.unsplash.com/photo-1552667466-07770ae110d0?auto=format&fit=crop&w=1400&q=80",
-      alt: "Club seating and lounge area",
-    },
-    // icon: <Sofa size={iconSize} />,
-    // meta: "[Amenities]",
+    description: "Clean and well-maintained facilities for player convenience.",
+    // media: { type: "image", src: "/prime-sports/toilet-shower-room.jpg", alt: "Air-conditioned toilet and shower room" },
   },
 ];
 
 export default function FacilityShowcase() {
   return (
-    <ExpandingCards
-      items={facilityCards}
-      defaultActiveIndex={0}
-      label="Prime Sports facility gallery"
-    />
+    // Single reveal for the gallery as one unit on first scroll-into-view — the cards'
+    // own hover/focus expand and media crossfade already carry the section's interaction
+    // language, so this stays a plain fade+rise rather than stacking a per-card stagger.
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <ExpandingCards
+        items={facilityCards}
+        defaultActiveIndex={0}
+        fallbackMark={fallbackMark}
+        label="Prime Sports facility gallery"
+      />
+    </motion.div>
   );
 }

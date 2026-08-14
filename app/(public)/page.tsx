@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import AppShell from "@/components/prime-sports/layout/app-shell";
+import ClosingCta from "@/components/prime-sports/home/closing-cta";
 import FacilityShowcase from "@/components/prime-sports/home/facility-showcase";
 import HalideTopoHero from "@/components/prime-sports/home/halide-topo-hero";
 import HomeFaq, { type FaqItem } from "@/components/prime-sports/home/home-faq";
@@ -117,23 +117,7 @@ export default function Home() {
           <section className="relative overflow-hidden border-t border-border bg-[linear-gradient(135deg,var(--surface)_0%,var(--canvas)_100%)] px-0 py-16 text-foreground" data-od-id="landing-cta" data-nav-theme="dark">
             <SectionBackdrop variant="grid" />
             <div className={`${containerClassName} relative z-10 flex flex-wrap items-center justify-between gap-6`}>
-              <div>
-                <h2 className="max-w-[14ch] [font-family:var(--font-heading)] text-[clamp(28px,4vw,42px)] font-extrabold uppercase leading-[1.1] tracking-[0.06em]">Your court is waiting.</h2>
-                <p className="mt-2 text-[15px] opacity-65">Reserve in under few minutes. Pay your way. Show up &amp; play.</p>
-              </div>
-              <Link
-                href="/reserve"
-                className="group relative inline-flex min-h-12 skew-x-[-11deg] items-center justify-center overflow-hidden bg-foreground px-8 text-canvas transition-colors duration-300 ease-out [clip-path:polygon(0_0,calc(100%-16px)_0,100%_16px,100%_100%,0_100%)] hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-secondary max-[640px]:min-h-11 max-[640px]:px-6"
-              >
-                <span className="skew-x-[11deg] text-[13px] font-bold uppercase tracking-[0.16em]">
-                  Reserve a Court →
-                </span>
-                {/* Folded-corner / ribbon detail */}
-                <span
-                  aria-hidden="true"
-                  className="absolute right-0 top-0 size-4 bg-canvas/25 transition-colors duration-300 ease-out [clip-path:polygon(0_0,0_100%,100%_100%)] group-hover:bg-foreground/30"
-                />
-              </Link>
+              <ClosingCta />
             </div>
           </section>
     </AppShell>

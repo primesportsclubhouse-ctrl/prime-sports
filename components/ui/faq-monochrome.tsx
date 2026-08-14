@@ -1,8 +1,14 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useState, type MouseEvent } from "react";
 
 import { cn } from "@/lib/utils";
+
+// A genuine list earns a sibling stagger — but capped, so five-plus questions don't
+// take forever to finish arriving. Delay plateaus at 150ms instead of growing with N.
+const FAQ_STAGGER_STEP_MS = 30;
+const FAQ_STAGGER_CAP_MS = 150;
 
 export type FaqItem = {
   question: string;
@@ -51,8 +57,16 @@ export function FaqMonochrome({
           const triggerId = `faq-trigger-${index}`;
 
           return (
-            <li
+            <motion.li
               key={item.question}
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{
+                duration: 0.35,
+                delay: Math.min(index * FAQ_STAGGER_STEP_MS, FAQ_STAGGER_CAP_MS) / 1000,
+                ease: [0.16, 1, 0.3, 1],
+              }}
               className={cn(
                 // The card paints its own dark surface via the inline `background` below, so its
                 // text color is pinned to `text-foreground` here rather than left to inherit —
@@ -136,7 +150,7 @@ export function FaqMonochrome({
                   </p>
                 </div>
               </div>
-            </li>
+            </motion.li>
           );
         })}
       </ul>

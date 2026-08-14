@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 import BookingSteps from "@/components/prime-sports/booking/booking-steps";
@@ -8,6 +8,7 @@ import QrCodeCard from "@/components/prime-sports/booking/qr-code-card";
 import { useReservation } from "@/components/prime-sports/booking/reservation-provider";
 import WaiverFormDialog from "@/components/prime-sports/booking/waiver-form-dialog";
 import { useToast } from "@/components/prime-sports/toast/toast-provider";
+import { displayKeyToChannel, type ReferenceSource } from "@/lib/payments";
 import {
   BookingStepStatus,
   formatCurrency,
@@ -30,7 +31,16 @@ type UploadState = {
   meta: string;
 };
 
-const paymentChannels = [
+type PaymentChannel = {
+  key: string;
+  label: string;
+  account: string;
+};
+
+// Fallback shown only while /api/payment-channels is still loading (or if it
+// fails) — same placeholder copy the seeded payment_channels rows carry, so
+// there's no visible flash of different content once the real fetch lands.
+const FALLBACK_CHANNELS: PaymentChannel[] = [
   { key: "GCash", label: "QR · GCash", account: "[Account name]\n[Account no.]" },
   { key: "Maya", label: "QR · Maya", account: "[Account name]\n[Account no.]" },
   { key: "Bank Transfer", label: "QR · Bank", account: "[Bank name]\n[Account no.]" },
@@ -38,69 +48,224 @@ const paymentChannels = [
 
 export default function CheckoutClient() {
   const { showToast } = useToast();
-  const { contact, bookings } = useReservation();
+  const { contact, bookings, sessionToken, refreshBookings } = useReservation();
+  const [paymentChannels, setPaymentChannels] = useState<PaymentChannel[]>(FALLBACK_CHANNELS);
   const [activeChannelIndex, setActiveChannelIndex] = useState(0);
   const [upload, setUpload] = useState<UploadState | null>(null);
+  const [receiptPath, setReceiptPath] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [reference, setReference] = useState("");
-  const [isReading, setIsReading] = useState(false);
-  const [isDone, setIsDone] = useState(false);
-  const [isFlashing, setIsFlashing] = useState(false);
+  const [referenceSource, setReferenceSource] = useState<ReferenceSource>("manual");
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDetectingReference, setIsDetectingReference] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const ocrTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    return () => {
-      if (ocrTimerRef.current) {
-        clearTimeout(ocrTimerRef.current);
-      }
+    let cancelled = false;
 
-      if (flashTimerRef.current) {
-        clearTimeout(flashTimerRef.current);
+    (async () => {
+      try {
+        const response = await fetch("/api/payment-channels");
+        if (!response.ok || cancelled) {
+          return;
+        }
+
+        const data = await response.json();
+        if (!cancelled && Array.isArray(data.channels) && data.channels.length > 0) {
+          setPaymentChannels(
+            data.channels.map((channel: { displayKey: string; label: string; account: string }) => ({
+              key: channel.displayKey,
+              label: channel.label,
+              account: channel.account,
+            })),
+          );
+        }
+      } catch {
+        // Network error — the placeholder channels above still render, so
+        // the checkout flow isn't blocked.
       }
+    })();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
-  function startOcrSimulation(file: File) {
-    if (ocrTimerRef.current) {
-      clearTimeout(ocrTimerRef.current);
+  /**
+   * Calls the real /api/ocr/receipt (Google Cloud Vision TEXT_DETECTION) —
+   * fire-and-forget from handleFile once a receipt has actually landed in
+   * Storage. Only auto-fills the reference field when: the customer hasn't
+   * already typed something into it (never clobber a manual entry, even
+   * with a "confident" OCR result), and the endpoint returns a confident
+   * extraction. Every other outcome — not configured (501), configured but
+   * unconfident/no match (200, reference: null or confident: false),
+   * configured but the Vision call itself failed (502), or a network error
+   * reaching our own endpoint — leaves manual entry exactly as it already
+   * works today; none of these are surfaced as errors since this is a
+   * best-effort convenience, not a required step.
+   */
+  async function detectReference(path: string, referenceAtUploadTime: string) {
+    if (!sessionToken || referenceAtUploadTime.trim()) {
+      return;
+    }
+
+    setIsDetectingReference(true);
+
+    try {
+      const response = await fetch("/api/ocr/receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionToken, receiptPath: path }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data?.ocrAvailable && data.confident && typeof data.reference === "string") {
+        setReference(data.reference);
+        setReferenceSource("ocr");
+      }
+    } catch {
+      // Network error reaching our own OCR endpoint — fall back silently.
+    } finally {
+      setIsDetectingReference(false);
+    }
+  }
+
+  async function handleFile(file: File | undefined) {
+    if (!file || !sessionToken) {
+      return;
     }
 
     setUpload({
       name: file.name || "receipt-screenshot.png",
-      meta: `${file.size ? `${Math.round(file.size / 1024)}KB` : "[File size]"} · ${file.type || "image/png"}`,
+      meta: `${file.size ? `${Math.round(file.size / 1024)}KB` : "unknown size"} · ${file.type || "image/png"}`,
     });
-    setReference("");
-    setIsReading(true);
-    setIsDone(false);
+    setReceiptPath(null);
+    setUploadError(null);
+    setIsUploading(true);
 
-    ocrTimerRef.current = setTimeout(() => {
-      const nextReference = `PRS-${Math.floor(100000 + Math.random() * 900000)}`;
-      setReference(nextReference);
-      setIsReading(false);
-      setIsDone(true);
-      setIsFlashing(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("sessionToken", sessionToken);
 
-      flashTimerRef.current = setTimeout(() => {
-        setIsFlashing(false);
-      }, 600);
-    }, 2200);
+      const response = await fetch("/api/uploads/receipt", { method: "POST", body: formData });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setUploadError(data?.error ?? "Could not upload that receipt.");
+        setIsUploading(false);
+        return;
+      }
+
+      setReceiptPath(data.path);
+      setIsUploading(false);
+      void detectReference(data.path, reference);
+    } catch {
+      setUploadError("Network error — could not upload that receipt.");
+      setIsUploading(false);
+    }
   }
 
-  function handleFile(file: File | undefined) {
-    if (!file) {
+  const bookingIds = bookings.map((item) => item.id).filter((id): id is string => Boolean(id));
+  const allWaiversAccepted = bookings.length > 0 && bookings.every((item) => item.waiverAccepted);
+
+  async function handleWaiverAccept() {
+    if (!sessionToken || bookingIds.length === 0) {
+      return { ok: false, error: "No reserved slots to attach a waiver to yet." };
+    }
+
+    try {
+      for (const bookingId of bookingIds) {
+        const response = await fetch(`/api/bookings/${bookingId}/waiver`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionToken }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
+          return { ok: false, error: data?.error ?? "Could not save your waiver acceptance." };
+        }
+      }
+
+      await refreshBookings();
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "Network error — could not save your waiver acceptance." };
+    }
+  }
+
+  async function handleSubmitForVerification() {
+    if (!sessionToken || bookingIds.length === 0) {
       return;
     }
 
-    startOcrSimulation(file);
+    const channel = displayKeyToChannel(activeChannel.key);
+    if (!channel) {
+      showToast({ title: "Pick a payment channel", variant: "default" });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/payment-submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionToken,
+          bookingIds,
+          channel,
+          referenceNo: reference.trim(),
+          receiptImageUrl: receiptPath,
+          referenceSource,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        showToast({
+          title: "Could not submit for verification",
+          description: data?.error ?? "Please try again.",
+          variant: "default",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      await refreshBookings();
+      setIsSubmitted(true);
+      setIsSubmitting(false);
+      showToast({
+        title: "Submitted for verification",
+        description: `Reference ${reference.trim()} is pending manual approval.`,
+        variant: "success",
+      });
+    } catch {
+      showToast({
+        title: "Network error",
+        description: "Could not submit for verification. Please try again.",
+        variant: "default",
+      });
+      setIsSubmitting(false);
+    }
   }
 
   const containerClassName = `${primeContainerClasses.default} grid grid-cols-[1fr_1.1fr] gap-8 py-10 max-[980px]:grid-cols-1`;
   const panelClassName = primeSurfacePanelClass;
-  const referenceDone = Boolean(reference.trim());
-  const stepStatuses: BookingStepStatus[] = ["done", "done", "done", referenceDone ? "done" : "current"];
-  const activeChannel = paymentChannels[activeChannelIndex];
+  const canSubmit =
+    bookings.length > 0 &&
+    Boolean(receiptPath) &&
+    Boolean(reference.trim()) &&
+    allWaiversAccepted &&
+    !isSubmitting &&
+    !isSubmitted;
+  const stepStatuses: BookingStepStatus[] = ["done", "done", "done", isSubmitted ? "done" : "current"];
+  const activeChannel = paymentChannels[activeChannelIndex] ?? paymentChannels[0];
   const total = bookings.reduce((sum, item) => sum + getHourlyRate(item.date, operatingHours[item.timeIndex]), 0);
 
   return (
@@ -266,7 +431,7 @@ export default function CheckoutClient() {
               onDrop={(event) => {
                 event.preventDefault();
                 setIsDragging(false);
-                handleFile(event.dataTransfer.files[0]);
+                void handleFile(event.dataTransfer.files[0]);
               }}
             >
               <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full border border-border bg-surface text-[22px] text-accent" aria-hidden="true">
@@ -280,7 +445,7 @@ export default function CheckoutClient() {
               type="file"
               hidden
               accept="image/*"
-              onChange={(event) => handleFile(event.target.files?.[0])}
+              onChange={(event) => void handleFile(event.target.files?.[0])}
             />
 
             {upload ? (
@@ -292,14 +457,19 @@ export default function CheckoutClient() {
                     <div className="text-[11px] opacity-60">{upload.meta}</div>
                   </div>
                 </div>
-                <div className={`mt-3 flex items-center gap-3 rounded-[var(--radius)] border px-4 py-3.5 text-[13px] ${isDone ? "border-success bg-[rgba(34,197,94,0.12)] text-foreground shadow-[0_0_0_1px_rgba(34,197,94,0.22),0_0_26px_rgba(34,197,94,0.12)]" : "border-border bg-canvas text-foreground"}`} id="ocrStatus">
-                  {isReading ? <span className="size-4 animate-spin rounded-full border-2 border-foreground/20 border-t-success" aria-hidden="true" /> : null}
+                <div
+                  className={`mt-3 flex items-center gap-3 rounded-[var(--radius)] border px-4 py-3.5 text-[13px] ${receiptPath ? "border-success bg-[rgba(34,197,94,0.12)] text-foreground shadow-[0_0_0_1px_rgba(34,197,94,0.22),0_0_26px_rgba(34,197,94,0.12)]" : uploadError ? "border-accent bg-[rgba(200,55,45,0.1)] text-foreground" : "border-border bg-canvas text-foreground"}`}
+                  id="uploadResultStatus"
+                >
+                  {isUploading ? <span className="size-4 animate-spin rounded-full border-2 border-foreground/20 border-t-success" aria-hidden="true" /> : null}
                   <span className="msg">
-                    {isDone
-                      ? `Reference extracted: ${reference}`
-                      : "OCR reading reference number from image…"}
+                    {receiptPath
+                      ? "Receipt uploaded — enter the transaction reference below."
+                      : uploadError
+                        ? uploadError
+                        : "Uploading receipt…"}
                   </span>
-                  {isDone ? <span className="ml-auto font-bold text-success">✓</span> : null}
+                  {receiptPath ? <span className="ml-auto font-bold text-success">✓</span> : null}
                 </div>
               </div>
             ) : null}
@@ -311,19 +481,35 @@ export default function CheckoutClient() {
               <input
                 id="refInput"
                 type="text"
-                className={`min-h-12 w-full rounded-[var(--radius)] border-2 px-4 text-[15px] [font-family:var(--font-mono)] font-semibold tabular-nums tracking-[0.02em] text-foreground outline-none transition placeholder:text-muted/50 focus:border-accent-secondary focus:shadow-[0_0_0_4px_rgba(212,163,89,0.12)] ${isFlashing ? "border-success bg-[rgba(34,197,94,0.12)]" : "border-border bg-surface-muted"}`}
+                className="min-h-12 w-full rounded-[var(--radius)] border-2 border-border bg-surface-muted px-4 text-[15px] [font-family:var(--font-mono)] font-semibold tabular-nums tracking-[0.02em] text-foreground outline-none transition placeholder:text-muted/50 focus:border-accent-secondary focus:shadow-[0_0_0_4px_rgba(212,163,89,0.12)]"
                 placeholder="PRS-XXXXXX"
                 autoComplete="off"
                 value={reference}
-                onChange={(event) => setReference(event.target.value)}
+                disabled={isSubmitted}
+                onChange={(event) => {
+                  setReference(event.target.value);
+                  setReferenceSource("manual");
+                }}
               />
-              <p className="mt-1.5 text-xs opacity-60">
-                Auto-populated by OCR. <strong>Verify before submitting.</strong>
-              </p>
+              {isDetectingReference ? (
+                <p className="mt-1.5 text-xs opacity-60">Scanning your receipt for a reference number…</p>
+              ) : referenceSource === "ocr" ? (
+                <p className="mt-1.5 text-xs font-semibold text-success">
+                  Auto-detected from your receipt — please confirm it&apos;s correct.
+                </p>
+              ) : (
+                <p className="mt-1.5 text-xs opacity-60">
+                  Enter the reference number shown on your payment app or bank receipt. <strong>Double-check before submitting.</strong>
+                </p>
+              )}
             </div>
 
             <div className="mt-6 border-t border-border pt-6">
-              <WaiverFormDialog />
+              <WaiverFormDialog
+                isAccepted={allWaiversAccepted}
+                disabled={bookings.length === 0 || isSubmitted}
+                onAccept={handleWaiverAccept}
+              />
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
@@ -333,17 +519,11 @@ export default function CheckoutClient() {
               <button
                 type="button"
                 className={primeButtonPrimaryClass}
-                aria-disabled={!reference.trim()}
-                disabled={!reference.trim()}
-                onClick={() =>
-                  showToast({
-                    title: "Submitted for verification",
-                    description: `Reference ${reference} is pending manual approval.`,
-                    variant: "success",
-                  })
-                }
+                aria-disabled={!canSubmit}
+                disabled={!canSubmit}
+                onClick={() => void handleSubmitForVerification()}
               >
-                Submit for Verification →
+                {isSubmitted ? "Submitted ✓" : isSubmitting ? "Submitting…" : "Submit for Verification →"}
               </button>
             </div>
           </div>
