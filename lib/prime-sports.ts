@@ -80,6 +80,14 @@ export const primeSurfacePanelClass =
 export const primeSurfaceCardClass =
   "rounded-[var(--radius)] border border-border bg-surface text-foreground shadow-[var(--shadow-sm)]";
 
+/** A thin dashed gold rule along a card's top edge — reads as painted court
+ *  boundary line, not a flat "accent top-border" template default. Render as an
+ *  absolutely positioned decorative strip (never `border-t`) on a `relative
+ *  overflow-hidden` card; the host card supplies its own border/radius/shadow.
+ *  Gold-only by design — red stays reserved for actions, never a passive flag. */
+export const primeSidelineStripeClass =
+  "pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-[repeating-linear-gradient(90deg,var(--accent-secondary)_0px_10px,transparent_10px_18px)]";
+
 export const primeToolbarIconButtonClass =
   "inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius)] border border-border bg-surface-muted text-sm text-foreground hover:border-accent-secondary hover:bg-surface disabled:pointer-events-none disabled:opacity-40";
 
@@ -248,91 +256,178 @@ export function createQrPixelGrid(seed: number, size = 21) {
   return grid;
 }
 
-export function createAdminBookings() {
-  const names = [
-    "[Rivera]",
-    "[Cruz]",
-    "[Santos]",
-    "[Reyes]",
-    "[Tan]",
-    "[Lim]",
-    "[Garcia]",
-    "[Mendoza]",
-    "[Aquino]",
-    "[Bautista]",
-  ];
+export type CalendarBooking = {
+  name: string;
+  pending: boolean;
+  ref: string;
+  amount: string;
+  channel: string;
+  phone: string;
+  email: string;
+  notes: string;
+  submitted: string;
+};
 
-  const bookings: Record<string, { name: string; pending: boolean }> = {};
+const calendarBookingNames = [
+  "[Rivera]",
+  "[Cruz]",
+  "[Santos]",
+  "[Reyes]",
+  "[Tan]",
+  "[Lim]",
+  "[Garcia]",
+  "[Mendoza]",
+  "[Aquino]",
+  "[Bautista]",
+];
 
-  timeSlots.forEach((time, timeIndex) => {
-    courtNames.forEach((court, courtIndex) => {
-      const hash = (timeIndex * 5 + courtIndex * 7 + 3) % 10;
+const calendarBookingChannels = ["GCash", "Maya", "Bank Transfer"];
+
+/** `courtCount` scopes the mock data to whichever sport's court roster is active
+ *  (7 for Pickleball, 4 for Badminton); `seedOffset` gives each sport its own
+ *  distinct-looking mock schedule instead of reusing identical hash patterns. */
+export function createAdminBookings(courtCount: number, seedOffset = 0) {
+  const bookings: Record<string, CalendarBooking> = {};
+
+  timeSlots.forEach((_, timeIndex) => {
+    for (let courtIndex = 0; courtIndex < courtCount; courtIndex += 1) {
+      const hash = (timeIndex * 5 + courtIndex * 7 + 3 + seedOffset) % 10;
+
       if (hash < 5) {
         const pending = hash === 2;
+        const rate = getHourlyRate(new Date(), operatingHours[timeIndex]);
+
         bookings[`${timeIndex}-${courtIndex}`] = {
-          name: names[(timeIndex + courtIndex) % names.length],
+          name: calendarBookingNames[(timeIndex + courtIndex + seedOffset) % calendarBookingNames.length],
           pending,
+          ref: `PRS-${100000 + ((timeIndex * 37 + courtIndex * 53 + seedOffset * 11) % 900000)}`,
+          amount: formatCurrency(rate),
+          channel: calendarBookingChannels[(timeIndex + courtIndex) % calendarBookingChannels.length],
+          phone: "[Phone]",
+          email: "[Email]",
+          notes: "[Customer note]",
+          submitted: "[Xm ago]",
         };
       }
-    });
+    }
   });
 
   return bookings;
 }
 
-export function createVerificationQueue(): QueueSubmission[] {
-  return [
-    {
-      id: 1,
-      name: "[Rivera, M.]",
-      ref: "PRS-742193",
-      court: "Court A",
-      time: "09:00",
-      amount: "[Rate]",
-      channel: "GCash",
-      submitted: "[Xm ago]",
+export type QueueHistoryStatus = "approved" | "rejected";
+
+export type QueueHistoryEntry = QueueSubmission & {
+  status: QueueHistoryStatus;
+  resolvedBy: string;
+  resolvedAt: string;
+};
+
+const queueHistoryStaff = ["A. Domingo", "R. Cabrera", "J. Villanueva", "M. Ferrer"];
+
+const queueHistoryNames = [
+  "[Rivera, M.]",
+  "[Cruz, D.]",
+  "[Santos, J.]",
+  "[Reyes, K.]",
+  "[Tan, R.]",
+  "[Lim, C.]",
+  "[Garcia, N.]",
+  "[Mendoza, L.]",
+  "[Aquino, P.]",
+  "[Bautista, F.]",
+  "[Ocampo, S.]",
+  "[Del Rosario, E.]",
+];
+
+/** Deterministic mock ledger of already-resolved verification submissions — the
+ *  "History" tab that sits next to the live Pending queue. About 1-in-3 land as
+ *  rejected, newest first, going back a couple of weeks. */
+export function createVerificationHistory(count = 22): QueueHistoryEntry[] {
+  return Array.from({ length: count }, (_, index) => {
+    const hash = (index * 13 + 5) % 10;
+    const status: QueueHistoryStatus = hash < 3 ? "rejected" : "approved";
+    const daysAgo = Math.floor(index / 2) + 1;
+    const courtIndex = index % courtNames.length;
+    const timeIndex = (index * 3) % operatingHours.length;
+    const rate = getHourlyRate(new Date(), operatingHours[timeIndex]);
+
+    return {
+      id: 1000 + index,
+      name: queueHistoryNames[index % queueHistoryNames.length],
+      ref: `PRS-${730000 + index * 37}`,
+      court: courtNames[courtIndex],
+      time: formatHour12(operatingHours[timeIndex]),
+      amount: formatCurrency(rate),
+      channel: calendarBookingChannels[index % calendarBookingChannels.length],
+      submitted: `${daysAgo + 1}d ago`,
       phone: "[Phone]",
       email: "[Email]",
       notes: "[Customer note]",
-    },
-    {
-      id: 2,
-      name: "[Santos, J.]",
-      ref: "PRS-742208",
-      court: "Court C",
-      time: "13:00",
-      amount: "[Rate]",
-      channel: "Bank Transfer",
-      submitted: "[Xm ago]",
-      phone: "[Phone]",
-      email: "[Email]",
-      notes: "[Customer note]",
-    },
-    {
-      id: 3,
-      name: "[Tan, R.]",
-      ref: "PRS-742187",
-      court: "Court B",
-      time: "15:00",
-      amount: "[Rate]",
-      channel: "Maya",
-      submitted: "[Xm ago]",
-      phone: "[Phone]",
-      email: "[Email]",
-      notes: "[Customer note]",
-    },
-    {
-      id: 4,
-      name: "[Aquino, P.]",
-      ref: "PRS-742155",
-      court: "Court D",
-      time: "10:00",
-      amount: "[Rate]",
-      channel: "GCash",
-      submitted: "[Xm ago]",
-      phone: "[Phone]",
-      email: "[Email]",
-      notes: "[Customer note]",
-    },
-  ];
+      status,
+      resolvedBy: queueHistoryStaff[index % queueHistoryStaff.length],
+      resolvedAt: daysAgo === 1 ? "Yesterday" : `${daysAgo}d ago`,
+    };
+  });
 }
+
+export type RosterSessionStatus = "completed" | "cancelled" | "no-show";
+
+export type RosterSessionHistoryEntry = {
+  id: string;
+  sport: SportKey;
+  date: string;
+  court: string;
+  timeSlot: string;
+  organizer: string;
+  playersCheckedIn: number;
+  capacity: number;
+  durationMinutes: number;
+  status: RosterSessionStatus;
+};
+
+// createRosterSessionHistory() (deterministic mock ledger of past court-side
+// check-in sessions) was removed here — roster-history.tsx now reads real
+// rows via GET /api/roster-sessions/history (see the Phase 2 roster schema +
+// lib/supabase/roster.ts's fetchRosterSessionHistory()). RosterSessionStatus
+// / RosterSessionHistoryEntry stay exported: the real data is shaped to fit
+// them exactly (id widened from the old mock's `number` to a real `string`
+// roster_sessions.id).
+
+export type NextRosterSession = {
+  sport: SportKey;
+  court: string;
+  date: string;
+  timeSlot: string;
+  organizer: string;
+  capacity: number;
+  playersCheckedIn: number;
+  startsIn: string;
+};
+
+/** Deterministic mock "what's coming up next" for the Roster page's Next
+ *  Session panel — one upcoming booking per sport, so the panel visibly
+ *  changes when the roster tabs switch sport. */
+export function createNextRosterSession(sportKey: SportKey): NextRosterSession {
+  const sport = getSport(sportKey);
+  const isPickleball = sportKey === "pickleball";
+  const courtIndex = isPickleball ? 2 : 1;
+  const timeIndex = isPickleball ? 6 : 9;
+
+  return {
+    sport: sportKey,
+    court: sport.courtNames[courtIndex] ?? sport.courtNames[0],
+    date: formatPrimeDate(new Date()),
+    timeSlot: formatHour12(operatingHours[timeIndex]),
+    organizer: isPickleball ? "[Rivera, M.]" : "[Cruz, D.]",
+    capacity: 10,
+    playersCheckedIn: isPickleball ? 3 : 0,
+    startsIn: isPickleball ? "Starts in 25 min" : "Starts in 1h 10m",
+  };
+}
+
+// createVerificationQueue() (fake pending-submissions data) was removed here
+// — verification-queue.tsx now reads real rows via GET /api/payment-submissions
+// (see the Phase 2 payments migration + lib/payments.ts). QueueSubmission
+// itself stays exported: QueueHistoryEntry above still extends it for the
+// (still-mock, out of this slice's scope) resolved-submissions History tab.
