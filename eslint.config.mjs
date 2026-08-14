@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Supabase CLI's local-dev runtime cache — already gitignored (see
+    // supabase/.gitignore), but flat-config ESLint doesn't read .gitignore
+    // on its own, so it was still being linted as vendored/generated code
+    // (a bundled Edge Runtime entrypoint) unrelated to anything in this repo.
+    "supabase/.temp/**",
   ]),
 ]);
 

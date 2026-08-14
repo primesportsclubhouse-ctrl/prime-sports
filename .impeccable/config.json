@@ -1,0 +1,68 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font-size",
+        "value": "13px",
+        "createdAt": "2026-08-12T17:11:56.924Z",
+        "reason": "pre-existing pattern: admin-dashboard.tsx already uses text-[13px] pervasively for secondary/meta text (dd values, empty-state copy); error banner text matches that established sibling convention, not a new deviation"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "18px",
+        "createdAt": "2026-08-12T17:12:24.007Z",
+        "reason": "pre-existing admin-shell.tsx header logo styling, unrelated to this auth slice edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "createdAt": "2026-08-12T17:12:24.114Z",
+        "reason": "pre-existing admin-shell.tsx Staff badge styling, unrelated to this auth slice edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "12px",
+        "createdAt": "2026-08-12T17:12:24.226Z",
+        "reason": "pre-existing admin-shell.tsx nav-link size; new Logout button intentionally reuses the identical class for visual parity with sibling Dashboard/Roster links per preserve-UI directive"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "15px",
+        "files": [
+          "components/prime-sports/admin/admin-dashboard.tsx"
+        ],
+        "createdAt": "2026-08-13T14:40:51.849Z",
+        "reason": "pre-existing 'Pending Submissions' panel heading, unrelated to this session's sport-switcher/booking-detail-dialog change; out of scope to restyle here"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "15px",
+        "files": [
+          "lib/prime-sports.ts"
+        ],
+        "createdAt": "2026-08-13T14:41:01.125Z",
+        "reason": "pre-existing primeButtonLargeClass token, unrelated to this session's sport-switcher/booking-detail-dialog change; out of scope to restyle here"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "15px",
+        "files": [
+          "components/prime-sports/admin/verification-queue.tsx"
+        ],
+        "createdAt": "2026-08-13T15:10:01.916Z",
+        "reason": "pre-existing 'Pending Submissions' panel heading carried over verbatim from admin-dashboard.tsx during the sidebar/page-split restructuring; not a new design decision"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "28px",
+        "files": [
+          "components/prime-sports/roster/roster-client.tsx"
+        ],
+        "createdAt": "2026-08-13T15:40:58.961Z",
+        "reason": "pre-existing 'Active Players' counter font-size, carried over unchanged from before this session's history-tab addition; not a new design decision"
+      }
+    ]
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-12T00:00:00.000Z",
+  "title": "Design System: PrimeSports Clubhouse",
+  "extensions": {
+    "colorMeta": {
+      "match-point-red": {
+        "role": "primary",
+        "displayName": "Match-Point Red",
+        "canonical": "#c8372d",
+        "tonalRamp": ["#3c1310", "#70241f", "#a0332c", "#ca483f", "#d7766f", "#e4a09b", "#f0cac7", "#faeceb"]
+      },
+      "court-line-gold": {
+        "role": "secondary",
+        "displayName": "Court-Line Gold",
+        "canonical": "#d4a359",
+        "tonalRamp": ["#3b2a12", "#6d4f22", "#9c7130", "#c59244", "#d4ad73", "#e1c69d", "#eedfc8", "#f9f4eb"]
+      },
+      "night-navy": {
+        "role": "neutral",
+        "displayName": "Night Navy",
+        "canonical": "#0b1b2b",
+        "tonalRamp": ["#12263b", "#21476d", "#30669c", "#4385c6", "#72a3d4", "#9dbfe1", "#c8dbee", "#ebf2f9"]
+      },
+      "clubhouse-cream": {
+        "role": "neutral",
+        "displayName": "Clubhouse Cream",
+        "canonical": "#f5efe6",
+        "tonalRamp": ["#352917", "#634d2c", "#8d6e3f", "#b48e55", "#c7aa80", "#d8c4a7", "#e9dece", "#f7f3ed"]
+      },
+      "deep-water-surface": {
+        "role": "neutral",
+        "displayName": "Deep Water Surface",
+        "canonical": "#12283f",
+        "tonalRamp": ["#132639", "#24476b", "#336599", "#4783c2", "#75a2d1", "#9fbfdf", "#c9dbed", "#ecf2f9"]
+      },
+      "fog-blue-muted": {
+        "role": "neutral",
+        "displayName": "Fog Blue",
+        "canonical": "#9cb0c3",
+        "tonalRamp": ["#1e262f", "#384857", "#4f677d", "#6a85a0", "#8fa4b7", "#b1c0cd", "#d3dce3", "#eff2f5"]
+      },
+      "hairline-border": {
+        "role": "neutral",
+        "displayName": "Hairline Border",
+        "canonical": "#203c5a",
+        "tonalRamp": ["#162637", "#294666", "#3a6492", "#5083b9", "#7ca2ca", "#a4bedb", "#ccdbeb", "#edf2f8"]
+      },
+      "confirmation-green": {
+        "role": "status",
+        "displayName": "Confirmation Green",
+        "canonical": "#22c55e",
+        "tonalRamp": ["#0e3f20", "#1a753b", "#25a755", "#37d270", "#69dd94", "#97e8b5", "#c5f2d5", "#eafaf0"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero headline only — the oversized Montserrat lockup over the isometric court plate." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles across the marketing page and booking flow." },
+      "label": { "displayName": "Label", "purpose": "Eyebrows, form labels, meta rows, pill and toolbar text." },
+      "body": { "displayName": "Body", "purpose": "Paragraph copy, descriptions, placeholder text." },
+      "mono": { "displayName": "Mono", "purpose": "Every price, rate window, time slot, booking reference, and admin-view date — never used for prose." },
+      "accent": { "displayName": "Editorial Accent", "purpose": "Italic serif flourish, currently reserved for bracketed placeholder copy." }
+    },
+    "shadows": [
+      { "name": "shadow-sm", "value": "0 10px 24px rgba(2, 8, 18, 0.18)", "purpose": "Resting elevation for most cards, panels, and buttons." },
+      { "name": "shadow-md", "value": "0 18px 40px rgba(2, 8, 18, 0.24)", "purpose": "Elevated emphasis — pricing cards, button hover/press." },
+      { "name": "shadow-lg", "value": "0 28px 60px rgba(2, 8, 18, 0.32)", "purpose": "Reserved for the hero's tilted image plate, the most 'lifted' object on the site." },
+      { "name": "focus-glow-gold", "value": "0 0 0 4px rgba(212, 163, 89, 0.12)", "purpose": "Input focus ring — glow, not lift, per the Glow-Not-Lift rule." }
+    ],
+    "motion": [
+      { "name": "ease-cta-fill", "value": "300ms ease-out", "purpose": "Skew CTA and skew-shaped elements filling to their hover color." },
+      { "name": "ease-hover-lift", "value": "150ms ease", "purpose": "Standard button/link hover transition (color, border, translateY)." },
+      { "name": "ease-step-check", "value": "220ms ease-out (scale 0.4→1, opacity 0→1)", "purpose": "Booking-step circle swapping its number for a checkmark." },
+      { "name": "ease-hero-release", "value": "900ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Hero plate springing back to rest when the cursor leaves." },
+      { "name": "ease-hero-track", "value": "40ms linear", "purpose": "Hero plate following the cursor while tracking." },
+      { "name": "glint-pulse", "value": "9-17s ease-in-out, mutually offset", "purpose": "Survey-backdrop glint lines breathing in and out without a visible shared rhythm." }
+    ],
+    "breakpoints": [
+      { "name": "tight", "value": "480px" },
+      { "name": "narrow", "value": "560px" },
+      { "name": "mobile", "value": "640px" },
+      { "name": "tablet", "value": "768px" },
+      { "name": "compact-desktop", "value": "920px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one 'act now' affordance — reserve, submit, confirm.",
+      "html": "<button class=\"ds-btn-primary\">Reserve Now</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 8px; border: 1px solid transparent; background: #c8372d; color: #f5efe6; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; white-space: nowrap; box-shadow: 0 10px 24px rgba(2, 8, 18, 0.18); transition: background 150ms, box-shadow 150ms, transform 150ms, border-color 150ms; cursor: pointer; } .ds-btn-primary:hover { background: #b33229; border-color: #d4a359; box-shadow: 0 18px 40px rgba(2, 8, 18, 0.24); transform: translateY(-1px); } .ds-btn-primary:focus-visible { outline: 2px solid #d4a359; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "The secondary, lower-commitment action.",
+      "html": "<button class=\"ds-btn-outline\">Learn More</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 8px; border: 1px solid #f5efe6; background: transparent; color: #f5efe6; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; white-space: nowrap; transition: border-color 150ms, background 150ms, color 150ms, transform 150ms; cursor: pointer; } .ds-btn-outline:hover { border-color: #d4a359; background: rgba(212, 163, 89, 0.12); color: #d4a359; transform: translateY(-1px); } .ds-btn-outline:focus-visible { outline: 2px solid #d4a359; outline-offset: 2px; }"
+    },
+    {
+      "name": "Skew CTA",
+      "kind": "custom",
+      "refersTo": "skew-cta",
+      "description": "Signature call-to-action: an -11deg skewed parallelogram with a folded-corner ribbon detail, shared by the hero, header, and mobile menu.",
+      "html": "<a class=\"ds-skew-cta\" href=\"#\"><span class=\"ds-skew-cta__label\">Reserve a Court &#8594;</span><span class=\"ds-skew-cta__ribbon\" aria-hidden=\"true\"></span></a>",
+      "css": ".ds-skew-cta { position: relative; display: inline-flex; min-height: 48px; padding: 0 32px; align-items: center; justify-content: center; overflow: hidden; background: #f5efe6; color: #0b1b2b; transform: skewX(-11deg); clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); transition: background 300ms ease-out, color 300ms ease-out; text-decoration: none; } .ds-skew-cta:hover { background: #c8372d; color: #f5efe6; } .ds-skew-cta:focus-visible { outline: 2px solid #d4a359; outline-offset: 4px; } .ds-skew-cta__label { display: inline-block; transform: skewX(11deg); font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.16em; } .ds-skew-cta__ribbon { position: absolute; top: 0; right: 0; width: 16px; height: 16px; background: rgba(11, 27, 43, 0.25); clip-path: polygon(0 0, 0 100%, 100% 100%); transition: background 300ms ease-out; } .ds-skew-cta:hover .ds-skew-cta__ribbon { background: rgba(245, 239, 230, 0.3); }"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "The pricing card — 8px radius, flat hairline border, and a dashed gold Sideline Stripe at the top edge instead of a solid colored border-top.",
+      "html": "<div class=\"ds-card\"><span class=\"ds-card__stripe\" aria-hidden=\"true\"></span><h3 class=\"ds-card__title\">Pickleball</h3><p class=\"ds-card__desc\">Covered &middot; International Standard Silica Sand Courts</p></div>",
+      "css": ".ds-card { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid #203c5a; background: #12283f; color: #f5efe6; box-shadow: 0 18px 40px rgba(2, 8, 18, 0.24); padding: 24px; } .ds-card__stripe { position: absolute; inset-inline: 0; top: 0; height: 3px; background: repeating-linear-gradient(90deg, #d4a359 0px 10px, transparent 10px 18px); } .ds-card__title { margin: 0; font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; } .ds-card__desc { margin: 6px 0 0; font-size: 14px; opacity: 0.6; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Form input with the heavier 2px border and gold focus glow.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Full Name <span class=\"ds-field__required\">required</span></span><input class=\"ds-field__input\" type=\"text\" placeholder=\"Juan Dela Cruz\" /></label>",
+      "css": ".ds-field { display: block; font-family: 'Plus Jakarta Sans', sans-serif; } .ds-field__label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.6; } .ds-field__required { color: #c8372d; } .ds-field__input { min-height: 48px; width: 100%; border-radius: 8px; border: 2px solid #203c5a; background: #1a2838; padding: 0 16px; font-size: 15px; font-weight: 500; color: #f5efe6; outline: none; transition: border-color 150ms, box-shadow 150ms; } .ds-field__input::placeholder { color: rgba(156, 176, 195, 0.5); } .ds-field__input:focus { border-color: #d4a359; box-shadow: 0 0 0 4px rgba(212, 163, 89, 0.12); }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Active/pending state indicator — gold when active or checked-in, muted when pending or inactive.",
+      "html": "<span class=\"ds-status-pill ds-status-pill--active\"><span class=\"ds-status-pill__dot\"></span>Active</span>",
+      "css": ".ds-status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 9999px; border: 1px solid #203c5a; background: #1a2838; color: #9cb0c3; padding: 6px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; } .ds-status-pill__dot { width: 8px; height: 8px; border-radius: 9999px; background: #546b82; } .ds-status-pill--active { border-color: #d4a359; background: rgba(212, 163, 89, 0.12); color: #d4a359; } .ds-status-pill--active .ds-status-pill__dot { background: #d4a359; }"
+    },
+    {
+      "name": "Booking Step",
+      "kind": "custom",
+      "refersTo": "booking-step",
+      "description": "One node of the 4-step booking progress tracker — a numbered circle that fills gold and swaps to a checkmark on completion.",
+      "html": "<div class=\"ds-step ds-step--done\"><span class=\"ds-step__circle\"><svg viewBox=\"0 0 16 16\" width=\"13\" height=\"13\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\"><path d=\"M3 8.5 L6.5 12 L13 4\" /></svg></span><span class=\"ds-step__label\">Details</span></div>",
+      "css": ".ds-step { display: inline-flex; align-items: center; gap: 10px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; color: #f5efe6; } .ds-step__circle { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 9999px; border: 1px solid #203c5a; opacity: 0.55; font-size: 12px; font-weight: 700; transition: background 300ms, border-color 300ms, color 300ms; } .ds-step--done .ds-step__circle { opacity: 1; border-color: #d4a359; background: #d4a359; color: #0b1b2b; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Night Match Under Lights",
+    "overview": "PrimeSports Clubhouse reads as a court after dark — deep navy stands in for the night sky and the shadowed stands, warm cream stands in for the lit playing surface, and the two accents split the emotional register cleanly: match-point red for the moment a customer has to act (book, confirm, a required field), court-line gold for everything that marks progress, state, or a boundary (a filled step, a focus ring, a card's sideline stripe). The site alternates bands of navy and cream section by section — never a gradient blend between them, always a hard cut at a section boundary — the same way a floodlit court reads as one lit rectangle against a dark surround, not a soft fade into it. The header tracks which band sits behind it and flips its own theme to match, so the 'lights' are always legible from the chrome down.\n\nThe system is unapologetically technical where it wants to be (the survey-plate backdrops, the isometric hero, tabular mono numerics on every price and time slot) and unapologetically direct where the business needs it (uppercase, wide-tracked, high-contrast headings; a single hard-skewed CTA shape reused everywhere someone needs to act). It does not soften into generic SaaS cheerfulness, and it does not cosplay old-money luxury — it's a well-run neighborhood sports club that happens to survey its own courts like a cartographer.",
+    "keyCharacteristics": [
+      "Hard navy/cream section alternation, never a mid-tone blend between them.",
+      "One accent for action (red), one for state/progress (gold) — never swapped.",
+      "Numerics (price, time, booking refs) always render in tabular mono, never the body font.",
+      "A single deliberate shape break — the skewed, folded-corner CTA — against an otherwise uniform 8px-radius world.",
+      "Decorative backdrops read as technical survey plates (grid lines, radiating spokes, grain), not organic texture."
+    ],
+    "rules": [
+      { "name": "The Two-Accent Rule", "body": "Red means \"act,\" gold means \"state.\" A gold CTA or a red progress indicator is always wrong — check which job the element is doing before picking the accent.", "section": "colors" },
+      { "name": "The Hard-Cut Rule", "body": "Navy and cream sections meet at a section boundary, never a gradient. If a new section needs the cream band, it commits fully (bg-foreground text-canvas) and declares data-nav-theme=\"light\" so the header flips with it.", "section": "colors" },
+      { "name": "The Numerics-On-Mono Rule", "body": "Any value the user might compare, total, or reconcile against a receipt (price, rate, time, reference code) renders in JetBrains Mono with tabular-nums. Body-font numerals read as prose, not as data — never mix the two for the same kind of value.", "section": "typography" },
+      { "name": "The Shouting Heading Rule", "body": "Headings are uppercase with positive tracking, always. A sentence-case or tight-tracked heading reads as a bug, not a variant.", "section": "typography" },
+      { "name": "The Glow-Not-Lift Rule", "body": "Interactive focus and selection states (an input's focus ring, a glinting survey line) are communicated with a soft colored glow (box-shadow spread in gold or cream, no offset) rather than a change in elevation. Elevation is for static hierarchy; glow is for \"this is active right now.\"", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep every price, time slot, and reference code in JetBrains Mono with tabular-nums.",
+      "Do use Match-Point Red only for something the visitor is being asked to act on right now.",
+      "Do use Court-Line Gold only to mark progress, selection, or focus state.",
+      "Do declare data-nav-theme on every new top-level section so the sticky header keeps tracking correctly.",
+      "Do keep the 8px radius uniform across cards, buttons, panels, and inputs.",
+      "Do reuse the existing Skew CTA component for any new primary call-to-action rather than styling a bespoke button.",
+      "Do use the Sideline Stripe, not a solid colored border-top, for any card that wants a top-edge accent detail."
+    ],
+    "donts": [
+      "Don't blend navy and cream with a gradient at a section boundary — the cut is always hard.",
+      "Don't introduce a second skewed/ribboned shape; the Skew CTA is the one deliberate break in an otherwise orthogonal, 8px-radius system.",
+      "Don't swap the two accents' roles (a gold CTA, a red progress bar) — that breaks the Two-Accent Rule.",
+      "Don't render a price, time, or booking reference in the body font — it will read as prose instead of data.",
+      "Don't add a hard drop-shadow anywhere; depth stays soft, ambient, and navy-tinted.",
+      "Don't put a solid colored border on a rounded card to flag a category — it's the single most recognizable AI-generated-UI tell; use the Sideline Stripe or content structure instead.",
+      "Don't decorate a passive label or category flag with red — red is action-only, with zero exceptions."
+    ]
+  }
+}

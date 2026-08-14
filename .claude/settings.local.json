@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pnpm lint *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.impeccable/design.json','utf8'\\)\\); console.log\\('valid json'\\)\")",
+      "Bash(node \"C:\\\\Users\\\\Ceferino Jumao-as V\\\\.claude\\\\plugins\\\\cache\\\\impeccable\\\\impeccable\\\\4.0.4\\\\skills\\\\impeccable\\\\scripts\\\\detect.mjs\" --json --scope layout components/prime-sports/home/pricing-cards.tsx components/prime-sports/home/location-panel.tsx)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(node \"C:\\\\Users\\\\Ceferino Jumao-as V\\\\.claude\\\\plugins\\\\cache\\\\impeccable\\\\impeccable\\\\4.0.4\\\\skills\\\\impeccable\\\\scripts\\\\hook-admin.mjs\" ignore-value design-system-font-size \"13px\" --reason \"pre-existing pattern: admin-dashboard.tsx already uses text-[13px] pervasively for secondary/meta text \\(dd values, empty-state copy\\); error banner text matches that established sibling convention, not a new deviation\")",
+      "Bash(node \"C:\\\\Users\\\\Ceferino Jumao-as V\\\\.claude\\\\plugins\\\\cache\\\\impeccable\\\\impeccable\\\\4.0.4\\\\skills\\\\impeccable\\\\scripts\\\\hook-admin.mjs\" ignore-value design-system-font-size \"18px\" --reason \"pre-existing admin-shell.tsx header logo styling, unrelated to this auth slice edit\")",
+      "Bash(node \"C:\\\\Users\\\\Ceferino Jumao-as V\\\\.claude\\\\plugins\\\\cache\\\\impeccable\\\\impeccable\\\\4.0.4\\\\skills\\\\impeccable\\\\scripts\\\\hook-admin.mjs\" ignore-value design-system-font-size \"10px\" --reason \"pre-existing admin-shell.tsx Staff badge styling, unrelated to this auth slice edit\")",
+      "Bash(node \"C:\\\\Users\\\\Ceferino Jumao-as V\\\\.claude\\\\plugins\\\\cache\\\\impeccable\\\\impeccable\\\\4.0.4\\\\skills\\\\impeccable\\\\scripts\\\\hook-admin.mjs\" ignore-value design-system-font-size \"12px\" --reason \"pre-existing admin-shell.tsx nav-link size; new Logout button intentionally reuses the identical class for visual parity with sibling Dashboard/Roster links per preserve-UI directive\")",
+      "Bash(node \"C:\\\\Users\\\\Ceferino Jumao-as V\\\\.claude\\\\plugins\\\\cache\\\\impeccable\\\\impeccable\\\\4.0.4\\\\skills\\\\impeccable\\\\scripts\\\\detect.mjs\" --json components/prime-sports/home/pricing-cards.tsx components/prime-sports/home/location-panel.tsx)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{try{const j=JSON.parse\\(d\\);console.log\\('slop findings:', j.filter\\(x=>x.category==='slop'\\).length\\); console.log\\('quality findings:', j.filter\\(x=>x.category==='quality'\\).length\\);}catch\\(e\\){console.log\\(d\\)}}\\)\")",
+      "Bash(pnpm build *)",
+      "Bash(pnpm exec *)",
+      "Bash(grep -m1 \"^C:\\\\|^\\\\.\\\\/\\\\|\\\\.tsx\\\\|\\\\.ts$\\\\|\\\\.js$\")",
+      "Bash(npx eslint *)"
     ]
   }
 }
