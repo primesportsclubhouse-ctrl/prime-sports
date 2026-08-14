@@ -162,6 +162,22 @@ function createShot(fromU: number, fromV: number, toNear: boolean): RallyShot {
   };
 }
 
+/**
+ * Splits the caption right after its first comma, so mobile can force a line break
+ * there (`Building communities,` / `Not just sports facilities.`) instead of either
+ * overflowing past the viewport (nowrap) or wrapping at an arbitrary word. Desktop
+ * keeps rendering the full string on one line — only the mobile markup uses this.
+ */
+function splitCaptionAtComma(text: string) {
+  const commaIndex = text.indexOf(",");
+  if (commaIndex === -1) return null;
+
+  return {
+    before: text.slice(0, commaIndex + 1),
+    after: text.slice(commaIndex + 1).trimStart(),
+  };
+}
+
 export default function HalideTopoHero({
   headlineTop = "Prime",
   headlineBottom = "Sports",
@@ -170,6 +186,7 @@ export default function HalideTopoHero({
   ctaHref = "/reserve",
   ctaLabel = "Reserve a court",
 }: HalideTopoHeroProps) {
+  const captionSplit = splitCaptionAtComma(caption);
   const stageRef = useRef<HTMLElement | null>(null);
   const plateRef = useRef<HTMLDivElement | null>(null);
   const ballRigRef = useRef<HTMLDivElement | null>(null);
@@ -404,7 +421,7 @@ export default function HalideTopoHero({
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
         <div
           ref={plateRef}
-          className="relative aspect-[16/9] w-[min(1120px,86vw)] [--plate-drop:0%] [--plate-shift:28%] [transform-style:preserve-3d] max-[900px]:[--plate-shift:16%] max-[640px]:w-[124vw] max-[640px]:[--plate-drop:10%] max-[640px]:[--plate-shift:0%]"
+          className="relative aspect-[16/9] w-[min(1120px,86vw)] [--plate-drop:0%] [--plate-shift:28%] [transform-style:preserve-3d] max-[900px]:[--plate-shift:16%] max-[640px]:w-[112vw] max-[640px]:[--plate-drop:-32%] max-[640px]:[--plate-shift:0%]"
           style={{
             transform: "translate(var(--plate-shift), var(--plate-drop))",
             transition: layerTransition,
@@ -535,7 +552,20 @@ export default function HalideTopoHero({
         >
           <div className={`${primeMonoValueClass} max-w-[60ch] text-[12px] uppercase leading-[1.7] tracking-[0.1em] text-foreground/55`}>
             <span className="block text-foreground/75">{tag}</span>
-            <span className="block whitespace-nowrap">{caption}</span>
+            <span className="block whitespace-nowrap max-[640px]:whitespace-normal">
+              {captionSplit ? (
+                <>
+                  {captionSplit.before}
+                  <br className="hidden max-[640px]:inline" />
+                  <span aria-hidden="true" className="max-[640px]:hidden">
+                    {" "}
+                  </span>
+                  {captionSplit.after}
+                </>
+              ) : (
+                caption
+              )}
+            </span>
           </div>
 
           <SkewCta href={ctaHref}>{ctaLabel}</SkewCta>
