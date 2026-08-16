@@ -5,6 +5,7 @@ import {
   type AvailabilityDay,
   type AvailabilitySlot,
   type SlotAvailability,
+  deriveDayType,
   deriveTimeOfDay,
   generateDaySlots,
   hour24ToTimeSlot,
@@ -109,11 +110,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ courts: [], days: [] });
   }
 
-  const [operatingHoursRes, rateCardsRes, bookingsRes, holdsRes] = await Promise.all([
+  const [operatingHoursRes, rateCardsRes, bookingsRes, holdsRes, blocksRes] = await Promise.all([
     supabase.from("operating_hours").select("day_of_week, open_time, close_time, slot_duration_min"),
     supabase
       .from("rate_cards")
-      .select("court_id, time_of_day, rate_php, effective_from")
+      .select("court_id, day_type, time_of_day, rate_php, effective_from")
       .in("court_id", courtIds),
     supabase
       .from("bookings")
@@ -129,6 +130,16 @@ export async function GET(request: NextRequest) {
       .gte("booking_date", from)
       .lte("booking_date", to)
       .gt("expires_at", new Date().toISOString()),
+    // Staff-blocked slots (see the availability_slot_blocks migration and
+    // components/prime-sports/admin/availability-editor.tsx) — a 4th status
+    // distinct from booked/held/open so the public grid can tell "someone
+    // else has this" apart from "staff closed this."
+    supabase
+      .from("slot_blocks")
+      .select("court_id, blocked_date, time_slot")
+      .in("court_id", courtIds)
+      .gte("blocked_date", from)
+      .lte("blocked_date", to),
   ]);
 
   if (operatingHoursRes.error) {
@@ -143,6 +154,9 @@ export async function GET(request: NextRequest) {
   if (holdsRes.error) {
     return NextResponse.json({ error: holdsRes.error.message }, { status: 500 });
   }
+  if (blocksRes.error) {
+    return NextResponse.json({ error: blocksRes.error.message }, { status: 500 });
+  }
 
   const operatingHoursByDay = new Map<number, { open_time: string; close_time: string; slot_duration_min: number }>();
   for (const row of operatingHoursRes.data ?? []) {
@@ -151,15 +165,24 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const rateCardsByCourt = new Map<string, { time_of_day: string; rate_php: number; effective_from: string }[]>();
+  const rateCardsByCourt = new Map<
+    string,
+    { day_type: string; time_of_day: string; rate_php: number; effective_from: string }[]
+  >();
   for (const row of rateCardsRes.data ?? []) {
     const list = rateCardsByCourt.get(row.court_id) ?? [];
     list.push(row);
     rateCardsByCourt.set(row.court_id, list);
   }
 
-  function findRate(courtId: string, timeOfDay: string, date: string) {
-    const rows = (rateCardsByCourt.get(courtId) ?? []).filter((row) => row.time_of_day === timeOfDay);
+  // Filters on both the weekday/weekend axis (`dayType`) and the
+  // daytime/evening axis (`timeOfDay`) — see the rate-card pricing editor
+  // migration (20260816000000_phase2_rate_cards_day_type.sql) for why the
+  // weekday/weekend axis exists on rate_cards at all now.
+  function findRate(courtId: string, dayType: string, timeOfDay: string, date: string) {
+    const rows = (rateCardsByCourt.get(courtId) ?? []).filter(
+      (row) => row.day_type === dayType && row.time_of_day === timeOfDay,
+    );
     if (rows.length === 0) {
       return null;
     }
@@ -176,9 +199,14 @@ export async function GET(request: NextRequest) {
   const heldKeys = new Set(
     (holdsRes.data ?? []).map((row) => `${row.court_id}|${row.booking_date}|${row.time_slot}`),
   );
+  const blockedKeys = new Set(
+    (blocksRes.data ?? []).map((row) => `${row.court_id}|${row.blocked_date}|${row.time_slot}`),
+  );
 
   const days: AvailabilityDay[] = dateList.map((date) => {
-    const dayOfWeek = parseDateStringLocal(date).getDay();
+    const parsedDate = parseDateStringLocal(date);
+    const dayOfWeek = parsedDate.getDay();
+    const dayType = deriveDayType(parsedDate);
     const hours = operatingHoursByDay.get(dayOfWeek);
 
     if (!hours) {
@@ -194,13 +222,23 @@ export async function GET(request: NextRequest) {
 
       for (const court of resolvedCourts) {
         const key = `${court.id}|${date}|${timeSlot}`;
-        courtsStatus[court.id] = bookedKeys.has(key) ? "booked" : heldKeys.has(key) ? "held" : "open";
+        // Priority order matters: an existing confirmed/held booking always
+        // wins display over a block added afterward (create_booking_draft()
+        // already refuses to create a *new* booking on a blocked slot, but a
+        // slot can still have been booked before staff blocked it).
+        courtsStatus[court.id] = bookedKeys.has(key)
+          ? "booked"
+          : heldKeys.has(key)
+            ? "held"
+            : blockedKeys.has(key)
+              ? "blocked"
+              : "open";
       }
 
       // Rate is advertised the same regardless of which court in the list is
       // asked about (single shared schedule across all courts), so use the
       // first resolved court as the representative lookup.
-      const ratePhp = resolvedCourts.length > 0 ? findRate(resolvedCourts[0].id, timeOfDay, date) : null;
+      const ratePhp = resolvedCourts.length > 0 ? findRate(resolvedCourts[0].id, dayType, timeOfDay, date) : null;
 
       return { hour24, timeSlot, timeOfDay, ratePhp, courts: courtsStatus };
     });

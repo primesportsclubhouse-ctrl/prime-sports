@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   description: "Enter your contact details to begin reserving a Prime Sports court.",
 };
 
+// See checkout/page.tsx's own comment — SiteFooter's `[Contact]` read
+// benefits from the same periodic revalidation.
+export const revalidate = 60;
+
 export default function ReservePage() {
   return (
     <AppShell currentPath="/reserve" simple>

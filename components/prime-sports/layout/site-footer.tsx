@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { getPrimeContainerClassName, primeNavLinks } from "@/lib/prime-sports";
+import { fetchFacilitySettings } from "@/lib/supabase/facility-content";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 type SiteFooterProps = {
   currentPath: string;
@@ -8,19 +10,38 @@ type SiteFooterProps = {
   containerVariant?: "default" | "narrow" | "wide";
 };
 
-export default function SiteFooter({
+/** Server Component direct read, same rationale as app/(public)/page.tsx's
+ *  `getFaqItems()` — this component has no client hooks, so there's no need
+ *  to round-trip through GET /api/facility-settings over HTTP. Returns the
+ *  literal "[Contact]" placeholder (not a fetch error, and not a fabricated
+ *  phone number) whenever neither `contact_phone` nor `contact_email` is set
+ *  yet — which is the honest, unfilled-placeholder state facility_settings
+ *  seeds today; see the Phase 3 content-management seed migration's own
+ *  comments on why no contact info was invented to seed with. */
+async function getContactLabel(): Promise<string> {
+  try {
+    const supabase = createServiceRoleClient();
+    const settings = await fetchFacilitySettings(supabase);
+    return settings.contactPhone || settings.contactEmail || "[Contact]";
+  } catch {
+    return "[Contact]";
+  }
+}
+
+export default async function SiteFooter({
   currentPath,
   simple = false,
   containerVariant = "default",
 }: SiteFooterProps) {
   const containerClassName = getPrimeContainerClassName(containerVariant);
+  const contactLabel = await getContactLabel();
 
   if (simple) {
     return (
       <footer className="mt-10 border-t border-border py-8" data-od-id="site-footer">
         <div className={`${containerClassName} flex flex-wrap items-center justify-between gap-4 text-[13px] opacity-60`}>
           <p>© 2026 PrimeSports Clubhouse. All rights reserved.</p>
-          <p>Highway, Minglanilla, Cebu · [Contact]</p>
+          <p>Highway, Minglanilla, Cebu · {contactLabel}</p>
         </div>
       </footer>
     );
@@ -82,7 +103,7 @@ export default function SiteFooter({
         </div>
         <div className="flex flex-wrap justify-between gap-3 border-t border-border pt-6 text-xs opacity-50">
           <p>© 2026 PrimeSports Clubhouse. All rights reserved.</p>
-          <p>Highway, Minglanilla, Cebu · [Contact]</p>
+          <p>Highway, Minglanilla, Cebu · {contactLabel}</p>
         </div>
       </div>
     </footer>

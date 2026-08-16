@@ -29,7 +29,10 @@ Auth modes used below:
 
 | Route | Method | Auth | Purpose |
 |---|---|---|---|
-| `/api/payment-channels` | GET | Public | Lists the 3 payment channels (GCash/Maya/Bank Transfer) for checkout. |
+| `/api/payment-channels` | GET | Public | Lists the 3 payment channels (GCash/Maya/Bank Transfer) for checkout, including each channel's real `qrImageUrl` if a manager/admin has uploaded one (falls back to `null` — checkout renders the decorative placeholder QR). Also used by the admin content editor's Payment Channels tab. |
+| `/api/payment-channels/[key]` | PATCH | Staff (manager/admin) | Edits an existing channel's label/account name/account number. The 3 channel keys are fixed (Postgres enum also relied on by `payment_submissions.channel`) — this is not an "add a channel" endpoint. |
+| `/api/payment-channels/[key]/qr-image` | POST | Staff (manager/admin) | Uploads/replaces a channel's real QR image into the public `payment-qr-codes` Storage bucket; deletes the previous image object, if any. |
+| `/api/payment-channels/[key]/qr-image` | DELETE | Staff (manager/admin) | Clears a channel's QR image, reverting checkout to the placeholder render. |
 | `/api/payment-submissions` | POST | Guest (token) | Submits a payment claim (reference number, amount, channel, receipt path) tied to a booking. |
 | `/api/payment-submissions` | GET | Staff | Lists submissions (filterable by `status`) for the verification queue, with signed receipt image URLs. |
 | `/api/payment-submissions/[id]/approve` | POST | Staff | Sets submission `approved` **and** booking `confirmed`. Fires audit log + customer notifications (email/SMS) as best-effort side effects. |
@@ -57,4 +60,4 @@ Auth modes used below:
 |---|---|---|---|
 | `/api/admin-audit-log` | GET | Staff | Paginated, filterable read of every logged staff action. No consumer UI yet — the log itself was the checklist item. |
 
-What gets logged: payment approve/reject, and staff-initiated roster session activate/end (guest-initiated activations are correctly excluded — only a real staff actor should show up in a staff audit trail).
+What gets logged: payment approve/reject, staff-initiated roster session activate/end (guest-initiated activations are correctly excluded — only a real staff actor should show up in a staff audit trail), and payment channel edits/QR image upload/removal.

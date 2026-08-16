@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { channelToDisplayKey } from "@/lib/payments";
+import { fetchPaymentChannels } from "@/lib/supabase/payment-channels";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
@@ -9,26 +9,32 @@ export const dynamic = "force-dynamic";
  *  checkout-client.tsx. Reads through the service-role client the same way
  *  /api/availability does (courts/rate_cards/operating_hours are already
  *  public-read under RLS too); there's nothing guest-specific to check
- *  here. */
+ *  here. Also doubles as the admin content editor's "Payment Channels" tab
+ *  read (same GET-serves-both-public-and-admin shape as
+ *  /api/facility-media) — `qrImageUrl` is the field that slice actually
+ *  needs and the public checkout flow didn't have until now. */
 export async function GET() {
   const supabase = createServiceRoleClient();
 
-  const { data, error } = await supabase
-    .from("payment_channels")
-    .select("key, label, account_name, account_number, qr_payload")
-    .order("key");
+  try {
+    const channels = await fetchPaymentChannels(supabase);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      channels: channels.map((channel) => ({
+        key: channel.key,
+        displayKey: channel.displayKey,
+        label: channel.label,
+        account: `${channel.accountName}\n${channel.accountNumber}`,
+        accountName: channel.accountName,
+        accountNumber: channel.accountNumber,
+        qrPayload: channel.qrPayload,
+        qrImageUrl: channel.qrImageUrl,
+      })),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to load payment channels." },
+      { status: 500 },
+    );
   }
-
-  const channels = (data ?? []).map((row) => ({
-    key: row.key as string,
-    displayKey: channelToDisplayKey(row.key),
-    label: row.label as string,
-    account: `${row.account_name}\n${row.account_number}`,
-    qrPayload: row.qr_payload as string | null,
-  }));
-
-  return NextResponse.json({ channels });
 }

@@ -13,8 +13,16 @@ import SectionBackdrop from "@/components/prime-sports/ui/section-backdrop";
 import {
   primeContainerClasses,
 } from "@/lib/prime-sports";
+import { fetchFaqItems } from "@/lib/supabase/facility-content";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
-const faqItems: FaqItem[] = [
+// Same bracketed-placeholder copy this file always shipped with — now only
+// the fallback if `faq_items` (see
+// supabase/migrations/20260816010000_phase3_facility_content_schema.sql) is
+// somehow unreachable at request time, not the primary source. The real
+// current source of truth is that same table, editable from /admin/content's
+// FAQ tab without a code deploy — see getFaqItems() below.
+const FALLBACK_FAQ_ITEMS: FaqItem[] = [
   {
     question: "[FAQ question 01 — reservations & booking policy]",
     answer:
@@ -47,14 +55,47 @@ const faqItems: FaqItem[] = [
   },
 ];
 
+/** Server Component direct read (this page composes structure/metadata only —
+ *  no client hooks live here — so there's no need to round-trip through
+ *  GET /api/faq-items over HTTP the way the client components elsewhere in
+ *  this codebase do; see facility-showcase.tsx / location-panel.tsx for that
+ *  client-fetch pattern instead). Degrades to FALLBACK_FAQ_ITEMS rather than
+ *  throwing, so a transient DB hiccup never 500s the whole homepage. */
+async function getFaqItems(): Promise<FaqItem[]> {
+  try {
+    const supabase = createServiceRoleClient();
+    const rows = await fetchFaqItems(supabase);
+    if (rows.length === 0) {
+      return FALLBACK_FAQ_ITEMS;
+    }
+    return rows.map((row) => ({
+      question: row.question,
+      answer: row.answer,
+      meta: row.category ?? undefined,
+    }));
+  } catch {
+    return FALLBACK_FAQ_ITEMS;
+  }
+}
+
 export const metadata: Metadata = {
   title: "PrimeSports Clubhouse",
   description:
     "Marketing overview and module launcher for the Prime Sports court reservation platform.",
 };
 
-export default function Home() {
+// This page's FAQ section and SiteFooter's "[Contact]" spot both read
+// `facility_content`-backed tables directly at render time (see getFaqItems()
+// above and site-footer.tsx). Without a revalidate window this page would
+// otherwise be fully static and bake that content in at build time — which
+// would defeat the whole point of making it staff-editable from
+// /admin/content without a code deploy. 60s keeps most of the static-render
+// performance benefit while still picking up edits promptly.
+export const revalidate = 60;
+
+export default async function Home() {
   const containerClassName = primeContainerClasses.default;
+  const faqItems = await getFaqItems();
 
   return (
     <AppShell currentPath="/">

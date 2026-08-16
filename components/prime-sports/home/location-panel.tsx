@@ -2,7 +2,7 @@
 
 import { Clock, MapPin } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { primeSidelineStripeClass } from "@/lib/prime-sports";
 
@@ -11,26 +11,68 @@ const MAPS_EMBED_SRC = "https://www.google.com/maps?q=PrimeSports+Clubhouse+Ming
 const MAPS_DIRECTIONS_HREF =
   "https://www.google.com/maps/place/PrimeSports+Clubhouse+Minglanilla/@10.2417885,123.7835417,17z/data=!3m1!4b1!4m6!3m5!1s0x33a9775301240a8d:0xf552455d471f4cce!8m2!3d10.2417885!4d123.7835417!16s%2Fg%2F11npy8qgzh";
 
-const details = [
-  {
-    id: "address",
-    icon: MapPin,
-    label: "Address",
-    value: "Highway, Minglanilla",
-    note: "Cebu, 6064",
-  },
-  {
-    id: "hours",
-    icon: Clock,
-    label: "Opening Hours",
-    value: "6:00 AM – 2:00 AM",
-    note: "Open daily · Last slot starts 1:00 AM",
-    mono: true,
-  },
-];
+type FacilitySettingsResponse = {
+  addressLine: string;
+  addressArea: string;
+  hoursValue: string;
+  hoursNote: string;
+};
+
+// Same real address/hours this file always shipped with — now the initial
+// render *and* the fallback if GET /api/facility-settings ever fails, so this
+// panel never flashes empty or shows broken text. Once the fetch below
+// succeeds, these get replaced with whatever's saved in `facility_settings`
+// (see /admin/content's Settings tab) — editable by staff without a code
+// deploy, though this default already matches today's real, correct values.
+const FALLBACK_SETTINGS: FacilitySettingsResponse = {
+  addressLine: "Highway, Minglanilla",
+  addressArea: "Cebu, 6064",
+  hoursValue: "6:00 AM – 2:00 AM",
+  hoursNote: "Open daily · Last slot starts 1:00 AM",
+};
 
 export default function LocationPanel() {
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [settings, setSettings] = useState<FacilitySettingsResponse>(FALLBACK_SETTINGS);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/facility-settings");
+        const data = await response.json().catch(() => null);
+
+        if (!cancelled && response.ok && data?.settings) {
+          setSettings(data.settings as FacilitySettingsResponse);
+        }
+      } catch {
+        // Silent — FALLBACK_SETTINGS stays on screen.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const details = [
+    {
+      id: "address",
+      icon: MapPin,
+      label: "Address",
+      value: settings.addressLine,
+      note: settings.addressArea,
+    },
+    {
+      id: "hours",
+      icon: Clock,
+      label: "Opening Hours",
+      value: settings.hoursValue,
+      note: settings.hoursNote,
+      mono: true,
+    },
+  ];
 
   return (
     <motion.div

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useToast } from "@/components/prime-sports/toast/toast-provider";
+import { toDateString } from "@/lib/booking";
 import {
   formatHour12,
   formatPrimeDate,
@@ -24,12 +25,51 @@ import {
 const TIME_COLUMN_PX = 70;
 const COURT_COLUMN_PX = 170;
 
+// YYYY-MM-DD — matches /api/availability-blocks' date shape directly (see
+// lib/booking.ts's isValidDateString), so no format conversion is needed at
+// the network boundary. toDateString() is the same local-date formatter the
+// booking flow's own server routes use, not a UTC-shifting `toISOString()`.
 function toDateKey(date: Date) {
-  return date.toDateString();
+  return toDateString(date);
 }
 
 function slotKey(dateKey: string, sport: SportKey, timeIndex: number, courtIndex: number) {
   return `${dateKey}-${sport}-${timeIndex}-${courtIndex}`;
+}
+
+type ServerBlockEntry = { date: string; courtIndex: number; hour24: number };
+
+/** Removes every locally-known block for (any date in `dateKeys`, `sport`)
+ *  from `set`, then adds back exactly what `serverEntries` says is actually
+ *  blocked — i.e. replaces this slice of the Set with server truth, without
+ *  disturbing anything for a different sport or a date outside this scope.
+ *  Shared by the load-on-week/sport-change effect and the post-save
+ *  reconciliation below, since both need the same "trust the server for
+ *  this slice" merge. */
+function reconcileBlockedSlots(
+  set: Set<string>,
+  dateKeys: string[],
+  sport: SportKey,
+  serverEntries: ServerBlockEntry[],
+): Set<string> {
+  const next = new Set(set);
+  const scopePrefixes = dateKeys.map((dateKey) => `${dateKey}-${sport}-`);
+
+  for (const existingKey of Array.from(next)) {
+    if (scopePrefixes.some((prefix) => existingKey.startsWith(prefix))) {
+      next.delete(existingKey);
+    }
+  }
+
+  for (const entry of serverEntries) {
+    const timeIndex = operatingHours.indexOf(entry.hour24);
+    if (timeIndex === -1) {
+      continue;
+    }
+    next.add(slotKey(entry.date, sport, timeIndex, entry.courtIndex));
+  }
+
+  return next;
 }
 
 export default function AvailabilityEditor() {
@@ -43,10 +83,73 @@ export default function AvailabilityEditor() {
   const [activeSport, setActiveSport] = useState<SportKey>("pickleball");
   const [blockedSlots, setBlockedSlots] = useState<Set<string>>(new Set());
   const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const dragRef = useRef({ isDown: false, startX: 0, scrollLeft: 0, moved: false });
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const activeDate = selectedDates.find((date) => toDateKey(date) === activeDateKey) ?? null;
+
+  // Loads whatever's already blocked, server-side, for the currently visible
+  // week + sport — replaces the old "blockedSlots always starts empty"
+  // behavior. Refetches whenever the visible week or the active sport
+  // changes (both narrow which (court, date) combinations are even in
+  // scope), same trigger set the task calls for. Every date a staff member
+  // can actually click is one of these 7 `weekDays`, so this is enough
+  // coverage without needing a separate fetch per newly-selected date.
+  //
+  // Known tradeoff: this trusts the server as ground truth for the whole
+  // visible week + sport on every re-render of that scope, including
+  // navigating away and back to the same week before saving — any unsaved
+  // local toggles for that week get overwritten by whatever's still
+  // persisted. There's no "are there unsaved edits in this scope" guard
+  // (mirroring `isDirty` not blocking navigation elsewhere in this
+  // component either); staff are expected to Save before switching away.
+  useEffect(() => {
+    let cancelled = false;
+
+    const rangeDates = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + index);
+      return toDateKey(date);
+    });
+    const from = rangeDates[0];
+    const to = rangeDates[rangeDates.length - 1];
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/availability-blocks?sport=${activeSport}&from=${from}&to=${to}`,
+        );
+        const data = await response.json().catch(() => null);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok) {
+          showToast({
+            title: "Could not load availability",
+            description: data?.error ?? "Failed to load existing blocks for this week.",
+          });
+          return;
+        }
+
+        const serverEntries: ServerBlockEntry[] = Array.isArray(data?.blocks) ? data.blocks : [];
+        setBlockedSlots((prev) => reconcileBlockedSlots(prev, rangeDates, activeSport, serverEntries));
+      } catch {
+        if (!cancelled) {
+          showToast({
+            title: "Could not load availability",
+            description: "Network error — failed to load existing blocks for this week.",
+          });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [weekStart, activeSport, showToast]);
 
   // Switching the active date or sport swaps to a different grid — reset
   // horizontal scroll so the new column set never opens mid-scroll.
@@ -143,13 +246,64 @@ export default function AvailabilityEditor() {
     setIsDirty(true);
   }
 
-  function handleSave() {
-    setIsDirty(false);
-    showToast({
-      title: "Availability saved",
-      description: `${selectedDates.length || 1} date${selectedDates.length === 1 ? "" : "s"} · ${activeSportDefinition.label} availability updated.`,
-      variant: "success",
-    });
+  async function handleSave() {
+    if (selectedDates.length === 0 || isSaving) {
+      return;
+    }
+
+    const dateKeys = selectedDates.map(toDateKey);
+    const dateKeySet = new Set(dateKeys);
+
+    // The full desired blocked-set for (every selected date × the active
+    // sport) — not a diff. blockedSlots already accumulates toggles across
+    // every selected date (not just whichever one is on screen), so reading
+    // it here is what makes "Save Changes" a real multi-date batch save
+    // rather than only persisting the currently visible date.
+    const blocked: { date: string; courtIndex: number; hour24: number }[] = [];
+    for (const dateKey of dateKeys) {
+      for (let timeIndex = 0; timeIndex < operatingHours.length; timeIndex += 1) {
+        for (let courtIndex = 0; courtIndex < activeSportCourts.length; courtIndex += 1) {
+          if (blockedSlots.has(slotKey(dateKey, activeSport, timeIndex, courtIndex))) {
+            blocked.push({ date: dateKey, courtIndex, hour24: operatingHours[timeIndex] });
+          }
+        }
+      }
+    }
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/availability-blocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sport: activeSport, dates: dateKeys, blocked }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        showToast({
+          title: "Could not save availability",
+          description: data?.error ?? "Failed to save availability changes.",
+        });
+        return;
+      }
+
+      const serverEntries: ServerBlockEntry[] = Array.isArray(data?.blocks) ? data.blocks : [];
+      setBlockedSlots((prev) => reconcileBlockedSlots(prev, Array.from(dateKeySet), activeSport, serverEntries));
+      setIsDirty(false);
+      showToast({
+        title: "Availability saved",
+        description: `${dateKeys.length} date${dateKeys.length === 1 ? "" : "s"} · ${activeSportDefinition.label} availability updated.`,
+        variant: "success",
+      });
+    } catch {
+      showToast({
+        title: "Could not save availability",
+        description: "Network error — failed to save availability changes.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   const containerClassName = primeContainerClasses.wide;
@@ -352,11 +506,11 @@ export default function AvailabilityEditor() {
         <button
           type="button"
           className={primeButtonPrimaryClass}
-          aria-disabled={!isDirty}
-          disabled={!isDirty}
-          onClick={handleSave}
+          aria-disabled={!isDirty || isSaving}
+          disabled={!isDirty || isSaving}
+          onClick={() => void handleSave()}
         >
-          Save Changes
+          {isSaving ? "Saving…" : "Save Changes"}
         </button>
       </div>
     </section>

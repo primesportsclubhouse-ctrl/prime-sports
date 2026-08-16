@@ -19,9 +19,11 @@ import {
   formatCurrency,
   formatPrimeDate,
   getHourlyRate,
+  getRateKey,
   getSport,
   getSportCourtLabel,
   getWeekStart,
+  isDaytimeHour,
   monthNames,
   operatingHours,
   primeButtonPrimaryClass,
@@ -89,6 +91,9 @@ async function loadAvailabilityMap(date: Date, sport: SportKey): Promise<Map<num
   return next;
 }
 
+type RateTier = { daytime: number; evening: number };
+type UniformRates = { weekday: RateTier; weekend: RateTier };
+
 function sameItem(a: BookingLineItem, b: BookingLineItem) {
   return (
     toDateKey(a.date) === toDateKey(b.date) &&
@@ -127,6 +132,15 @@ export default function BookingClient() {
   const [availabilityByHour, setAvailabilityByHour] = useState<Map<number, Record<number, SlotAvailability>>>(
     new Map(),
   );
+  // Real pricing from the `rate_cards` table — same GET /api/rate-cards
+  // pricing-cards.tsx already reads for the homepage marketing display.
+  // Starts `null` and is populated on mount; `getDisplayRate()` below falls
+  // back to the old hardcoded `getHourlyRate()` table (the same
+  // seed-with-a-fallback convention checkout-client.tsx's FALLBACK_CHANNELS
+  // already uses for payment channels) until this arrives or if the fetch
+  // ever fails, so the price shown here can never silently drift from what
+  // /api/bookings actually stamps once real rates are loaded.
+  const [rates, setRates] = useState<UniformRates | null>(null);
 
   // Adjusting state during render (not in an effect) when `selections`
   // changes is the pattern React's docs recommend for this — see
@@ -171,6 +185,29 @@ export default function BookingClient() {
     }
   }
 
+  // GET /api/rate-cards once on mount — the same endpoint/response shape
+  // pricing-cards.tsx already consumes. Non-fatal on failure: getDisplayRate()
+  // below just keeps using its getHourlyRate() fallback.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/rate-cards");
+        const data = await response.json().catch(() => null);
+        if (!cancelled && response.ok && data?.rates) {
+          setRates(data.rates as UniformRates);
+        }
+      } catch {
+        // Network error — getDisplayRate() keeps falling back to getHourlyRate().
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Switching sport swaps to a narrower/wider grid — reset horizontal scroll so the
   // new column set never opens mid-scroll or partially off-screen.
   useEffect(() => {
@@ -208,14 +245,16 @@ export default function BookingClient() {
     };
   }, [activeDate, activeSport]);
 
-  // Live updates: someone else booking/holding/cancelling a slot on this
-  // date should regray/reopen the grid without the guest needing to reselect
-  // a date or refresh. Falls back to polling internally if the realtime
-  // channel never subscribes (or drops) — see lib/supabase/realtime.ts. This
-  // callback isn't invoked from a bare `useEffect` body in this component
-  // (it fires from inside useRealtimeRefresh's own effect instead), so it can
-  // safely await-then-setState the same way the effect above does.
-  useRealtimeRefresh("booking-availability", ["bookings", "slot_holds"], () => {
+  // Live updates: someone else booking/holding/cancelling a slot — or staff
+  // blocking/unblocking one from the admin "Edit Availability" screen — on
+  // this date should regray/reopen the grid without the guest needing to
+  // reselect a date or refresh. Falls back to polling internally if the
+  // realtime channel never subscribes (or drops) — see
+  // lib/supabase/realtime.ts. This callback isn't invoked from a bare
+  // `useEffect` body in this component (it fires from inside
+  // useRealtimeRefresh's own effect instead), so it can safely
+  // await-then-setState the same way the effect above does.
+  useRealtimeRefresh("booking-availability", ["bookings", "slot_holds", "slot_blocks"], () => {
     if (!activeDate) {
       return;
     }
@@ -263,6 +302,20 @@ export default function BookingClient() {
     }
   }
 
+  // Same signature shape as getHourlyRate(date, hour24) so every existing
+  // call site below swaps in with no other change — reads the real
+  // `rate_cards` values once loaded, falling back to the old hardcoded table
+  // only until then (see the `rates` state doc comment above).
+  function getDisplayRate(date: Date, hour24: number) {
+    if (!rates) {
+      return getHourlyRate(date, hour24);
+    }
+
+    const dayType = getRateKey(date);
+    const timeOfDay = isDaytimeHour(hour24) ? "daytime" : "evening";
+    return rates[dayType][timeOfDay];
+  }
+
   const weekDays = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setDate(weekStart.getDate() + index);
@@ -276,7 +329,7 @@ export default function BookingClient() {
   const containerClassName = primeContainerClasses.default;
   const dateDone = selectedDates.length > 0;
   const slotDone = selections.length > 0;
-  const total = selections.reduce((sum, item) => sum + getHourlyRate(item.date, operatingHours[item.timeIndex]), 0);
+  const total = selections.reduce((sum, item) => sum + getDisplayRate(item.date, operatingHours[item.timeIndex]), 0);
   const stepStatuses: BookingStepStatus[] = [
     "done",
     dateDone ? "done" : "current",
@@ -347,7 +400,7 @@ export default function BookingClient() {
       return;
     }
 
-    const rate = getHourlyRate(activeDate, operatingHours[timeIndex]);
+    const rate = getDisplayRate(activeDate, operatingHours[timeIndex]);
     const result = await addBooking(candidate);
 
     if (!result.ok) {
@@ -542,7 +595,7 @@ export default function BookingClient() {
                       ))}
                     </div>
                     {timeSlots.map((time, timeIndex) => {
-                      const rate = getHourlyRate(activeDate, operatingHours[timeIndex]);
+                      const rate = getDisplayRate(activeDate, operatingHours[timeIndex]);
 
                       return (
                         <div key={time} className="grid gap-px bg-border" style={{ gridTemplateColumns }}>
@@ -571,7 +624,13 @@ export default function BookingClient() {
                                 onClick={() => void handleSlotClick(courtIndex, timeIndex)}
                               >
                                 {selected ? "✓ " : ""}
-                                {isTakenByOther ? (liveStatus === "booked" ? "Booked" : "Held") : formatCurrency(rate)}
+                                {isTakenByOther
+                                  ? liveStatus === "booked"
+                                    ? "Booked"
+                                    : liveStatus === "blocked"
+                                      ? "Closed"
+                                      : "Held"
+                                  : formatCurrency(rate)}
                               </button>
                             );
                           })}
@@ -600,7 +659,7 @@ export default function BookingClient() {
               ) : (
                 <ul className="flex max-h-[420px] flex-col gap-2.5 overflow-y-auto pr-1" data-od-id="booking-cart">
                   {sortedSelections.map((item) => {
-                    const rate = getHourlyRate(item.date, operatingHours[item.timeIndex]);
+                    const rate = getDisplayRate(item.date, operatingHours[item.timeIndex]);
                     const key = `${toDateKey(item.date)}-${item.sport}-${item.courtIndex}-${item.timeIndex}`;
                     const label = getSportCourtLabel(item.sport, item.courtIndex);
 

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   HOLD_TTL_MINUTES,
+  deriveDayType,
+  deriveTimeOfDay,
   getCourtName,
   hour24ToTimeSlot,
   isValidDateString,
@@ -11,7 +13,7 @@ import {
   parseDateStringLocal,
   todayDateString,
 } from "@/lib/booking";
-import { getHourlyRate } from "@/lib/prime-sports";
+import { fetchCourtRate } from "@/lib/supabase/rate-cards";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
@@ -143,7 +145,6 @@ export async function POST(request: NextRequest) {
 
   const courtName = getCourtName(sport, courtIndex);
   const timeSlot = hour24ToTimeSlot(hour24);
-  const pricePhp = getHourlyRate(parseDateStringLocal(bookingDate), hour24);
 
   const supabase = createServiceRoleClient();
 
@@ -160,6 +161,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: `No court configured for ${sport} index ${courtIndex}. Contact staff.` },
       { status: 404 },
+    );
+  }
+
+  // Real price-stamping source as of the rate-card pricing editor slice —
+  // reads `rate_cards` (this court's row for the booking's weekday/weekend +
+  // daytime/evening tier) instead of the retired `getHourlyRate()` hardcoded
+  // lookup, so a rate change staff make in /admin/rates is reflected on the
+  // very next booking, not just on the marketing page.
+  let pricePhp: number;
+  try {
+    const rate = await fetchCourtRate(
+      supabase,
+      court.id,
+      deriveDayType(parseDateStringLocal(bookingDate)),
+      deriveTimeOfDay(hour24),
+    );
+
+    if (rate === null) {
+      return NextResponse.json(
+        { error: "No rate configured for this court/date/time. Contact staff." },
+        { status: 500 },
+      );
+    }
+
+    pricePhp = rate;
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to look up the current rate." },
+      { status: 500 },
     );
   }
 
@@ -191,13 +221,22 @@ export async function POST(request: NextRequest) {
 
   if (draftError) {
     const isConflict = draftError.code === "23505";
+    // 'BLK01' is create_booking_draft()'s own custom SQLSTATE (see the
+    // availability_slot_blocks migration) — raised when staff has closed
+    // this exact (court, date, time) via the admin "Edit Availability"
+    // screen. Distinct from the 23505 double-booking race above: this isn't
+    // "someone else got there first", it's "this slot isn't bookable at all
+    // right now."
+    const isBlocked = draftError.code === "BLK01";
     return NextResponse.json(
       {
         error: isConflict
           ? "That slot was just taken by someone else — pick another time."
-          : draftError.message,
+          : isBlocked
+            ? "This slot is currently closed by staff — pick another time."
+            : draftError.message,
       },
-      { status: isConflict ? 409 : 500 },
+      { status: isConflict || isBlocked ? 409 : 500 },
     );
   }
 

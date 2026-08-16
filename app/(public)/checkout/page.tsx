@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   description: "Upload a payment receipt and submit a transaction reference for manual verification.",
 };
 
+// SiteFooter (rendered via AppShell below) reads `facility_settings` directly
+// for its "[Contact]" spot — see site-footer.tsx's own comment. Revalidating
+// every 60s (instead of only at build time) means an edit saved from
+// /admin/content shows up here without a redeploy, same as the homepage.
+export const revalidate = 60;
+
 export default function CheckoutPage() {
   return (
     <AppShell currentPath="/checkout" simple>

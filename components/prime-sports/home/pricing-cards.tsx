@@ -1,15 +1,15 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   RateKey,
   formatCurrency,
+  formatHour12,
   primeMetaLabelClass,
   primeMonoValueClass,
   primeSidelineStripeClass,
-  rateWindows,
 } from "@/lib/prime-sports";
 
 type PricingCourt = {
@@ -17,6 +17,22 @@ type PricingCourt = {
   title: string;
   description: string;
   courtsCount: number;
+};
+
+type RateTier = { daytime: number; evening: number };
+type UniformRates = { weekday: RateTier; weekend: RateTier };
+
+type DisplayWindow = { label: string; range: string; rate: number };
+
+// Structural window labels (the 6AM-4PM / 4PM-2AM daytime/evening boundary
+// PRODUCT.md's Rates section fixes) — not pricing data itself, so this stays
+// a local display constant rather than something read from `rate_cards`.
+// The *numbers* below (`rate`) are the part that used to be hardcoded and
+// now come from GET /api/rate-cards, the real `rate_cards` source of truth
+// (see supabase/migrations/20260816000000_phase2_rate_cards_day_type.sql).
+const TIME_OF_DAY_META: Record<"daytime" | "evening", { label: string; range: string }> = {
+  daytime: { label: "Daytime Rate", range: `${formatHour12(6)} – ${formatHour12(16)}` },
+  evening: { label: "Nighttime Rate", range: `${formatHour12(16)} – ${formatHour12(2)}` },
 };
 
 // "Covered" lives in the description now, not a standalone eyebrow above the
@@ -43,7 +59,41 @@ const TOGGLE_OPTIONS: { key: RateKey; label: string }[] = [
 
 export default function PricingCards() {
   const [rateKey, setRateKey] = useState<RateKey>("weekday");
-  const windows = rateWindows[rateKey];
+  const [rates, setRates] = useState<UniformRates | null>(null);
+
+  // Replaces the old `rateWindows[rateKey]` hardcoded read — this now hits
+  // GET /api/rate-cards, which reads the real `rate_cards` table (see
+  // lib/supabase/rate-cards.ts's `fetchUniformRates()`), so a rate change
+  // saved in /admin/rates shows up here on the next load without a code
+  // change or redeploy.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/rate-cards");
+        const data = await response.json().catch(() => null);
+        if (!cancelled && response.ok && data?.rates) {
+          setRates(data.rates as UniformRates);
+        }
+      } catch {
+        // Silent — the loading state below just persists, which is an honest
+        // reflection of "we couldn't reach the rate schedule" rather than
+        // ever showing invented numbers.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const windows: DisplayWindow[] | null = rates
+    ? [
+        { ...TIME_OF_DAY_META.daytime, rate: rates[rateKey].daytime },
+        { ...TIME_OF_DAY_META.evening, rate: rates[rateKey].evening },
+      ]
+    : null;
 
   return (
     <div>
@@ -121,25 +171,31 @@ export default function PricingCards() {
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.15, ease: "easeOut" }}
                 >
-                  {windows.map((window, index) => (
-                    <div
-                      key={window.label}
-                      className={`grid grid-cols-[1fr_auto] items-center gap-4 px-7 py-4.5 max-[640px]:px-5 ${
-                        index < windows.length - 1 ? "border-b border-border" : ""
-                      }`}
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold">{window.range}</span>
-                        <span className={`${primeMonoValueClass} text-xs opacity-55`}>
-                          {window.label}
-                        </span>
-                      </div>
-                      <div className={`${primeMonoValueClass} text-2xl`}>
-                        {formatCurrency(window.rate)}
-                        <span className={`${primeMonoValueClass} text-[13px] opacity-55`}>/hr</span>
-                      </div>
+                  {windows === null ? (
+                    <div className="px-7 py-4.5 max-[640px]:px-5">
+                      <span className={`${primeMonoValueClass} text-xs opacity-55`}>Loading rates…</span>
                     </div>
-                  ))}
+                  ) : (
+                    windows.map((window, index) => (
+                      <div
+                        key={window.label}
+                        className={`grid grid-cols-[1fr_auto] items-center gap-4 px-7 py-4.5 max-[640px]:px-5 ${
+                          index < windows.length - 1 ? "border-b border-border" : ""
+                        }`}
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-semibold">{window.range}</span>
+                          <span className={`${primeMonoValueClass} text-xs opacity-55`}>
+                            {window.label}
+                          </span>
+                        </div>
+                        <div className={`${primeMonoValueClass} text-2xl`}>
+                          {formatCurrency(window.rate)}
+                          <span className={`${primeMonoValueClass} text-[13px] opacity-55`}>/hr</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </motion.div>
               </AnimatePresence>
             </div>

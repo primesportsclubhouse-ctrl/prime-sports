@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, ChevronLeft, ChevronRight, ClipboardList, LogOut, Menu, SlidersHorizontal, Users, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, ClipboardList, FileText, LogOut, Menu, PhilippinePeso, SlidersHorizontal, Users, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -9,13 +9,21 @@ import { primeToolbarIconButtonClass } from "@/lib/prime-sports";
 
 import adminLogo from "@/public/prime-sports/header-logo.png";
 
-export type AdminRoute = "/admin/dashboard" | "/admin/availability" | "/admin/queue" | "/admin/roster";
+export type AdminRoute =
+  | "/admin/dashboard"
+  | "/admin/availability"
+  | "/admin/rates"
+  | "/admin/queue"
+  | "/admin/roster"
+  | "/admin/content";
 
 const adminNavLinks: { href: AdminRoute; label: string; icon: typeof CalendarDays }[] = [
   { href: "/admin/dashboard", label: "Master Calendar", icon: CalendarDays },
   { href: "/admin/availability", label: "Availability", icon: SlidersHorizontal },
+  { href: "/admin/rates", label: "Rate Cards", icon: PhilippinePeso },
   { href: "/admin/queue", label: "Verification Queue", icon: ClipboardList },
   { href: "/admin/roster", label: "Roster", icon: Users },
+  { href: "/admin/content", label: "Facility Content", icon: FileText },
 ];
 
 const COLLAPSE_STORAGE_KEY = "prime-admin-sidebar-collapsed";

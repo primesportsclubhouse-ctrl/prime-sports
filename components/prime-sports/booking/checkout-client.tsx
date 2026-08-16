@@ -14,7 +14,9 @@ import {
   formatCurrency,
   formatPrimeDate,
   getHourlyRate,
+  getRateKey,
   getSportCourtLabel,
+  isDaytimeHour,
   operatingHours,
   primeButtonPrimaryClass,
   primeContainerClasses,
@@ -35,16 +37,24 @@ type PaymentChannel = {
   key: string;
   label: string;
   account: string;
+  // Real QR image URL from payment_channels.qr_image_path, if a manager/
+  // admin has uploaded one via /admin/content > Payment Channels — null
+  // until then, in which case QrCodeCard falls back to its decorative
+  // placeholder render (see that component's own doc comment).
+  qrImageUrl: string | null;
 };
 
 // Fallback shown only while /api/payment-channels is still loading (or if it
 // fails) — same placeholder copy the seeded payment_channels rows carry, so
 // there's no visible flash of different content once the real fetch lands.
 const FALLBACK_CHANNELS: PaymentChannel[] = [
-  { key: "GCash", label: "QR · GCash", account: "[Account name]\n[Account no.]" },
-  { key: "Maya", label: "QR · Maya", account: "[Account name]\n[Account no.]" },
-  { key: "Bank Transfer", label: "QR · Bank", account: "[Bank name]\n[Account no.]" },
+  { key: "GCash", label: "QR · GCash", account: "[Account name]\n[Account no.]", qrImageUrl: null },
+  { key: "Maya", label: "QR · Maya", account: "[Account name]\n[Account no.]", qrImageUrl: null },
+  { key: "Bank Transfer", label: "QR · Bank", account: "[Bank name]\n[Account no.]", qrImageUrl: null },
 ];
+
+type RateTier = { daytime: number; evening: number };
+type UniformRates = { weekday: RateTier; weekend: RateTier };
 
 export default function CheckoutClient() {
   const { showToast } = useToast();
@@ -62,6 +72,34 @@ export default function CheckoutClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Real pricing from the `rate_cards` table — same GET /api/rate-cards
+  // pricing-cards.tsx and booking-client.tsx already read. Starts `null` and
+  // is populated on mount; getDisplayRate() below falls back to the old
+  // hardcoded getHourlyRate() table (the same seed-with-a-fallback
+  // convention FALLBACK_CHANNELS above already uses) until this arrives or
+  // if the fetch ever fails, so the price reviewed here at checkout can
+  // never silently drift from what /api/bookings actually stamped.
+  const [rates, setRates] = useState<UniformRates | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/rate-cards");
+        const data = await response.json().catch(() => null);
+        if (!cancelled && response.ok && data?.rates) {
+          setRates(data.rates as UniformRates);
+        }
+      } catch {
+        // Network error — getDisplayRate() keeps falling back to getHourlyRate().
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,11 +114,14 @@ export default function CheckoutClient() {
         const data = await response.json();
         if (!cancelled && Array.isArray(data.channels) && data.channels.length > 0) {
           setPaymentChannels(
-            data.channels.map((channel: { displayKey: string; label: string; account: string }) => ({
-              key: channel.displayKey,
-              label: channel.label,
-              account: channel.account,
-            })),
+            data.channels.map(
+              (channel: { displayKey: string; label: string; account: string; qrImageUrl: string | null }) => ({
+                key: channel.displayKey,
+                label: channel.label,
+                account: channel.account,
+                qrImageUrl: channel.qrImageUrl ?? null,
+              }),
+            ),
           );
         }
       } catch {
@@ -255,6 +296,20 @@ export default function CheckoutClient() {
     }
   }
 
+  // Same signature shape as getHourlyRate(date, hour24) so every existing
+  // call site below swaps in with no other change — reads the real
+  // `rate_cards` values once loaded, falling back to the old hardcoded table
+  // only until then (see the `rates` state doc comment above).
+  function getDisplayRate(date: Date, hour24: number) {
+    if (!rates) {
+      return getHourlyRate(date, hour24);
+    }
+
+    const dayType = getRateKey(date);
+    const timeOfDay = isDaytimeHour(hour24) ? "daytime" : "evening";
+    return rates[dayType][timeOfDay];
+  }
+
   const containerClassName = `${primeContainerClasses.default} grid grid-cols-[1fr_1.1fr] gap-8 py-10 max-[980px]:grid-cols-1`;
   const panelClassName = primeSurfacePanelClass;
   const canSubmit =
@@ -266,7 +321,7 @@ export default function CheckoutClient() {
     !isSubmitted;
   const stepStatuses: BookingStepStatus[] = ["done", "done", "done", isSubmitted ? "done" : "current"];
   const activeChannel = paymentChannels[activeChannelIndex] ?? paymentChannels[0];
-  const total = bookings.reduce((sum, item) => sum + getHourlyRate(item.date, operatingHours[item.timeIndex]), 0);
+  const total = bookings.reduce((sum, item) => sum + getDisplayRate(item.date, operatingHours[item.timeIndex]), 0);
 
   return (
     // Cream band: everything from the step timeline down to (but not including) the
@@ -305,7 +360,7 @@ export default function CheckoutClient() {
             ) : (
               <ul className="flex flex-col gap-2.5" data-od-id="reservation-line-items">
                 {bookings.map((item) => {
-                  const rate = getHourlyRate(item.date, operatingHours[item.timeIndex]);
+                  const rate = getDisplayRate(item.date, operatingHours[item.timeIndex]);
                   const key = `${item.date.toDateString()}-${item.sport}-${item.courtIndex}-${item.timeIndex}`;
 
                   return (
@@ -381,6 +436,7 @@ export default function CheckoutClient() {
                       label={activeChannel.label}
                       account={activeChannel.account}
                       seed={activeChannelIndex + 1}
+                      qrImageUrl={activeChannel.qrImageUrl}
                     />
                   </motion.div>
                 </AnimatePresence>

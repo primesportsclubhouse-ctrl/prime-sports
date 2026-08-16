@@ -17,8 +17,12 @@ An honest, current status ledger. This is the "what actually works" reference �
 - **Server-side draft booking** — the 4-step flow survives a refresh.
 - **Real-time subscriptions** — live availability grid, live verification queue.
 - **Booking-confirmation email** (Resend) — configured with a verified sending domain, verified with a real send.
-- **Admin audit log** — payment approve/reject and staff-initiated roster activate/end are all recorded.
+- **Admin audit log** — payment approve/reject, staff-initiated roster activate/end, and every content/rate/availability/QR edit below are all recorded.
 - **Slot-hold TTL sweep** — a proactive `pg_cron` job in addition to the existing lazy per-slot cleanup.
+- **Availability slot-blocking** (`/admin/availability`) — staff can mark specific court/hour slots closed for a date (maintenance, tournaments); a blocked slot is genuinely unbookable — the check lives inside `create_booking_draft()` itself, not just app-layer validation, and the public grid shows it live via realtime.
+- **Rate-card pricing** (`/admin/rates`) — `rate_cards` is now the actual, live source of truth for pricing everywhere: booking price-stamping, the availability grid's per-slot rate, the homepage pricing cards, and the in-flow booking/checkout price displays all read from it. The previously-hardcoded `rateWindows` table is gone from every real pricing path (kept only as a documented transient fallback in two components until their first fetch resolves).
+- **Facility content editing** (`/admin/content`) — real `facility_media`, `faq_items`, and `facility_settings` tables, a tabbed admin editor, and the homepage (facility gallery, FAQ section, footer contact line, location panel) all genuinely read from them via ISR (60s revalidation, no redeploy needed to see an edit).
+- **Payment channel QR images** (`/admin/content` → Payment Channels tab) — managers/admins can upload a channel's real GCash/Maya/bank QR image to a public Storage bucket; checkout renders the real image when one exists, falling back to the decorative placeholder otherwise. This is real image display, not real QR *generation* — see "explicitly descoped" below, still unchanged.
 
 ## Built, but intentionally not active
 
@@ -27,23 +31,17 @@ An honest, current status ledger. This is the "what actually works" reference �
 ## Explicitly descoped (business decision, not a gap)
 
 - **Real payment gateway** (PayMongo/Xendit) — manual approve/reject verification remains the process by design.
-- **Real QR generation** — the checkout QR is still a decorative rendering, not an actual scannable payment payload.
+- **Real QR *generation*** — encoding an actual scan-to-pay payment URI (vs. just displaying a real QR *image* the business already has, which is now built — see above) remains out of scope.
 
-## Never in scope, still frontend-only
+### Homepage placeholders — now editable, still not filled in with real content
 
-- **Availability editing** (`components/prime-sports/admin/availability-editor.tsx`) — the admin "Availability" screen is a per-date slot-blocking tool (mark specific court/hour combinations closed for maintenance, tournaments, etc.). It has zero backend wiring (confirmed: no `fetch` calls in the file at all) — clicking "Save Changes" only shows a success toast, nothing persists. This was never part of any phase's checklist item.
-- **Rate-card pricing editing** — there is currently no admin UI at all for changing what a court costs; `rate_cards` can only be changed by hand-editing a migration/seed. Not the same thing as the Availability screen above, despite living under a similarly-named nav concept.
-- **Facility content editing** — no admin UI exists for `facility_media`, `faq_items`, or `facility_settings` either. Explicitly tagged "skip for now" in the original backend checklist.
+Editable and containing real content are two different things — don't conflate them. As of the content editor slice, all three of these are managed from `/admin/content` and update the live site within ~60 seconds, no redeploy needed. But **no real content has actually been entered yet**:
 
-### Homepage placeholders still showing fake/incomplete content
+- **Facility photos** — all 6 facility gallery cards still have `src: null` in `facility_media`; none of the real photography exists (`public/prime-sports/` only has the logo and one hero court photo). Each card gracefully falls back to the club crest — an honest placeholder, not a stock photo pretending to be real.
+- **FAQ content** — every FAQ question/answer in `faq_items` is still the original literal bracketed placeholder text, e.g. `"[FAQ question 01 — reservations & booking policy]"`. Writing real answers is a content decision for the business, not something any agent should fabricate.
+- **Contact number** — `facility_settings.contact_phone`/`contact_email` are still `null`; the footer honestly renders `[Contact]` rather than a fabricated number.
 
-These are live on the public site right now, not just theoretical:
-
-- **Facility photos** — all 6 cards in the homepage's facility gallery (`components/prime-sports/home/facility-showcase.tsx`) have their `media` field commented out; none of the real photography exists yet (`public/prime-sports/` only has the logo and one hero court photo). Each card gracefully falls back to the club crest instead of showing a stock photo — an intentional, honest placeholder, but still a placeholder.
-- **FAQ content** — every FAQ question and answer on the homepage (`app/(public)/page.tsx`'s `faqItems`) is still literally bracketed placeholder text, e.g. `"[FAQ question 01 — reservations & booking policy]"`. Real answers were never written.
-- **Contact number** — the site footer (`components/prime-sports/layout/site-footer.tsx`) shows `Highway, Minglanilla, Cebu · [Contact]` — the phone number was never filled in, in both places it appears in that file.
-
-None of these three are backend gaps — there's nowhere in the database to even put this content yet (`facility_media`/`faq_items`/`facility_settings` tables were never created, per the "skip for now" item above). Fixing them requires both a real content decision from the business (actual photos, actual FAQ answers, the actual phone number) and, if you want it manageable outside a code deploy, the content-editing backend that doesn't exist yet either.
+Whoever manages the site content should log into `/admin/content` and fill these in — the mechanism to do so now exists, but the content itself still needs to actually be entered.
 
 ## Partially built, on purpose
 
