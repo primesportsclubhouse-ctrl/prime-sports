@@ -27,6 +27,14 @@ export type BookingConfirmationNotificationInput = {
   bookingDateLabel: string;
   timeSlotLabel: string;
   pricePhpLabel: string;
+  /** The booker's shareable, booking-scoped roster check-in link (see
+   *  approve/route.ts for how it's built) — `null` if no live slot_holds row
+   *  (and therefore no session_token) was found for this booking's slot,
+   *  which the email degrades from honestly rather than emailing a broken
+   *  link. SMS intentionally doesn't carry this — see lib/sms.ts, unchanged
+   *  by this feature; a link doesn't fit that channel's short-message shape
+   *  the way it does the email's CTA button. */
+  rosterCheckinUrl: string | null;
 };
 
 type LogArgs = {
@@ -98,6 +106,7 @@ export async function sendBookingConfirmationNotifications(
           timeSlotLabel: input.timeSlotLabel,
           pricePhpLabel: input.pricePhpLabel,
           bookingId: input.bookingId,
+          rosterCheckinUrl: input.rosterCheckinUrl,
         });
 
         if (result.outcome === "skipped") {

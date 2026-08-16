@@ -32,6 +32,11 @@ export type BookingConfirmationEmailInput = {
   timeSlotLabel: string;
   pricePhpLabel: string;
   bookingId: string;
+  /** The booker's shareable, booking-scoped roster check-in link — see
+   *  approve/route.ts for how it's built (embeds the booking's still-live
+   *  slot_holds.session_token). `null` skips the "Check in your group" CTA
+   *  below rather than emailing a broken link. */
+  rosterCheckinUrl: string | null;
 };
 
 function escapeHtml(value: string): string {
@@ -58,6 +63,14 @@ function buildBookingConfirmationHtml(input: BookingConfirmationEmailInput): str
         </tbody>
       </table>
       <p style="color: #777; font-size: 13px;">Booking reference: ${escapeHtml(input.bookingId)}</p>
+      ${
+        input.rosterCheckinUrl
+          ? `<p style="margin: 20px 0; text-align: center;">
+              <a href="${escapeHtml(input.rosterCheckinUrl)}" style="display: inline-block; background-color: #c8372d; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 24px; border-radius: 8px;">Check in your group</a>
+            </p>
+            <p style="color: #777; font-size: 13px;">Share this link with your group so everyone can check themselves in when they arrive at the court.</p>`
+          : ""
+      }
       <p>See you on the court!</p>
       <p style="color: #777; font-size: 13px;">— Prime Sports</p>
     </div>

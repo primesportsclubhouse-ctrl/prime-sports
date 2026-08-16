@@ -55,3 +55,19 @@ export type RosterBookingOption = {
 export function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
+
+/** The booking-facing half of what GET /api/roster-sessions/by-booking/[id]
+ *  returns — just enough for the public, booking-scoped check-in page
+ *  (components/prime-sports/roster/public-roster-checkin.tsx) to show "which
+ *  booking is this" without needing the full staff-picker's
+ *  RosterBookingOption shape (that one's keyed to a whole date's worth of
+ *  bookings across both sports, which this single-booking page has no use
+ *  for). */
+export type RosterBookingSummary = {
+  bookingId: string;
+  courtName: string;
+  bookingDate: string;
+  timeSlot: string;
+  customerName: string | null;
+  status: string;
+};
