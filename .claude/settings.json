@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm lint *)",
+      "Bash(pnpm build *)",
+      "Bash(node \"C:\\\\Users\\\\Ceferino Jumao-as V\\\\.claude\\\\plugins\\\\cache\\\\impeccable\\\\impeccable\\\\4.0.4\\\\skills\\\\impeccable\\\\scripts\\\\detect.mjs\" --json \"components/prime-sports/home/pricing-marquee.tsx\" \"app/\\(public\\)/page.tsx\" \"app/globals.css\")"
+    ]
+  }
+}

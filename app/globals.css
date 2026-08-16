@@ -273,3 +273,30 @@
     opacity: 0.22;
   }
 }
+
+/* Pricing section's outline-text marquee (see components/prime-sports/home/pricing-marquee.tsx).
+   Each row is two identical copies of the same repeated string side by side — translating
+   exactly one copy's width (-50%) loops back to an identical frame, so the seam never shows. */
+@keyframes pricing-marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes pricing-marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pricing-marquee-track {
+    animation: none;
+  }
+}

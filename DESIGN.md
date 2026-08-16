@@ -220,6 +220,9 @@ A cream-background card (regardless of the surrounding section's theme — payme
 ### Booking Steps (signature component)
 A horizontal step tracker (Details → Date → Court & Time → Confirm) of numbered circles connected by hairline segments. A step's circle fills gold and its number cross-fades to a checkmark (Framer Motion scale/opacity, 220ms ease-out) the moment it's completed — the only micro-interaction in the system built on a spring-like scale-in rather than a simple opacity fade.
 
+### Public Roster Check-In
+A booking-scoped, staff-free surface (`/roster/[bookingId]?token=...`, reached only via the "Check in your group" link in the booking-confirmation email) that lets a booker and their whole group check themselves in without a staff hand-off. It deliberately introduces no new visual vocabulary: the same status pill used elsewhere ("Check-In Open" gold / "Not Started" muted), the same mono player-count readout, and the same card/list styling as the admin roster tool carry over unchanged — this is the admin roster's existing language applied to a single-booking, public scope instead of the admin's full-day, multi-court browse view. It has no "End Session" control; ending a session stays staff-only on `/admin/roster`.
+
 ### Survey-Plate Backdrops (signature component)
 Three decorative, `aria-hidden` full-bleed backdrops sit behind section content, always paired with `relative z-10` content on top:
 - **Grid:** an orthogonal drawn-line grid (72px cells, 44px on mobile) with a handful of "glint" lines that slowly brighten and travel exactly one grid-step at a time, timed so a glint only ever moves while invisible.
