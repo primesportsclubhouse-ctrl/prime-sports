@@ -1,5 +1,7 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+> **Looking for how the backend actually works, or how to use the admin dashboard?** See [`/docs`](docs/README.md) — architecture, database schema, API reference, deployment runbook, and plain-language staff/customer guides.
+
 ## Getting Started
 
 First, run the development server:
