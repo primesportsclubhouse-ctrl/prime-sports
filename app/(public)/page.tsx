@@ -7,6 +7,7 @@ import HalideTopoHero from "@/components/prime-sports/home/halide-topo-hero";
 import HomeFaq, { type FaqItem } from "@/components/prime-sports/home/home-faq";
 import LocationPanel from "@/components/prime-sports/home/location-panel";
 import PricingCards from "@/components/prime-sports/home/pricing-cards";
+import PricingMarquee from "@/components/prime-sports/home/pricing-marquee";
 import SectionIntro from "@/components/prime-sports/home/section-intro";
 import SectionBackdrop from "@/components/prime-sports/ui/section-backdrop";
 import {
@@ -61,6 +62,7 @@ export default function Home() {
 
           {/* Section 2 — cream variant: grain only, no linework, inverted ink. */}
           <section className="relative scroll-mt-28 overflow-hidden border-b border-border bg-foreground px-0 py-20 text-canvas max-[640px]:py-12" id="pricing" data-od-id="landing-pricing" data-nav-theme="light">
+            <PricingMarquee />
             <SectionBackdrop variant="grain" />
             <div className={`${containerClassName} relative z-10`}>
               <SectionIntro

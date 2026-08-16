@@ -14,7 +14,7 @@ import {
   type SportKey,
 } from "@/lib/prime-sports";
 import type { createServiceRoleClient } from "@/lib/supabase/service-role";
-import { DEFAULT_ROSTER_CAPACITY, type RosterSessionDetail } from "@/lib/roster";
+import { DEFAULT_ROSTER_CAPACITY, type RosterBookingSummary, type RosterSessionDetail } from "@/lib/roster";
 
 type ServiceRoleClient = ReturnType<typeof createServiceRoleClient>;
 
@@ -63,6 +63,72 @@ export async function fetchRosterSessionDetail(
       checkedIn: entry.checked_in,
       checkInTime: entry.check_in_time,
     })),
+  };
+}
+
+/**
+ * Looks up a `roster_sessions` row by the `booking_id` it belongs to (rather
+ * than by the session's own id, which the entries/[id] route family assumes
+ * the caller already has) — every other lookup in this file assumes you
+ * start from a session id, but the public check-in page
+ * (app/(public)/roster/[bookingId]/page.tsx) only ever knows its bookingId,
+ * since that's all a booker's shareable link can reasonably encode. Returns
+ * `null` — not an error — when staff hasn't activated a session for this
+ * booking yet; that's the expected, common "still waiting" state, not a
+ * failure.
+ */
+export async function fetchRosterSessionDetailByBookingId(
+  supabase: ServiceRoleClient,
+  bookingId: string,
+): Promise<RosterSessionDetail | null> {
+  const { data: session, error } = await supabase
+    .from("roster_sessions")
+    .select("id")
+    .eq("booking_id", bookingId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!session) {
+    return null;
+  }
+
+  return fetchRosterSessionDetail(supabase, session.id);
+}
+
+/** The booking-summary half of GET /api/roster-sessions/by-booking/[id] —
+ *  split out from fetchRosterSessionDetailByBookingId above since a booking
+ *  is always resolvable even before any roster session exists for it (the
+ *  public check-in page needs to show "which court, which time" even while
+ *  it's still waiting for staff to activate check-in). */
+export async function fetchRosterBookingSummary(
+  supabase: ServiceRoleClient,
+  bookingId: string,
+): Promise<RosterBookingSummary | null> {
+  const { data: booking, error } = await supabase
+    .from("bookings")
+    .select("id, booking_date, time_slot, status, courts(name), customers(full_name)")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!booking) {
+    return null;
+  }
+
+  const court = (booking as unknown as { courts: { name: string } | null }).courts;
+  const customer = (booking as unknown as { customers: { full_name: string } | null }).customers;
+
+  return {
+    bookingId: booking.id,
+    courtName: court?.name ?? "Unknown court",
+    bookingDate: booking.booking_date,
+    timeSlot: booking.time_slot,
+    customerName: customer?.full_name ?? null,
+    status: booking.status,
   };
 }
 
