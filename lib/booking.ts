@@ -5,7 +5,15 @@
 // from both route handlers and (eventually) other server code without
 // dragging in request-scoped state.
 
-import { getSport, isDaytimeHour, operatingHours, sports, type SportKey } from "@/lib/prime-sports";
+import {
+  getRateKey,
+  getSport,
+  isDaytimeHour,
+  operatingHours,
+  sports,
+  type RateKey,
+  type SportKey,
+} from "@/lib/prime-sports";
 
 export const HOLD_TTL_MINUTES = 15;
 
@@ -17,12 +25,24 @@ export type BookingStatus =
   | "cancelled"
   | "no_show";
 
-export type SlotAvailability = "open" | "held" | "booked";
+// "blocked" is staff-closed (see the slot_blocks migration and
+// admin/availability-editor.tsx) — distinct from "held"/"booked", which are
+// both customer-driven occupancy. Priority when more than one could apply to
+// the same slot: booked > held > blocked > open (an existing confirmed
+// booking always wins display over a block added after the fact — see
+// /api/availability's status derivation).
+export type SlotAvailability = "open" | "held" | "booked" | "blocked";
 
 /** Mirrors the `staff_role` enum from the Phase 1 migration. */
 export type StaffRole = "staff" | "manager" | "admin";
 
 export type RateTimeOfDay = "daytime" | "evening";
+
+/** Mirrors the `rate_day_type` enum added by the rate-card pricing editor
+ *  migration (20260816000000_phase2_rate_cards_day_type.sql) — same
+ *  weekday/weekend split lib/prime-sports.ts's `RateKey` already models for
+ *  the (now-retired-from-pricing-duty) hardcoded rate table. */
+export type RateDayType = RateKey;
 
 /**
  * "Pickleball Court 1" — the single source of truth for how a (sport,
@@ -79,6 +99,16 @@ export function timeSlotToHour24(timeSlot: string) {
  *  redefining the boundary here. */
 export function deriveTimeOfDay(hour24: number): RateTimeOfDay {
   return isDaytimeHour(hour24) ? "daytime" : "evening";
+}
+
+/** Same weekday/weekend boundary lib/prime-sports.ts's `getRateKey()` already
+ *  defines — reused rather than redefined here so `rate_cards.day_type`
+ *  lookups can never drift from that single boundary definition. Takes a
+ *  `Date`, not a date string, matching `getRateKey()`'s own signature —
+ *  callers holding a `YYYY-MM-DD` string should run it through
+ *  `parseDateStringLocal()` first. */
+export function deriveDayType(date: Date): RateDayType {
+  return getRateKey(date);
 }
 
 export function isValidDateString(value: unknown): value is string {

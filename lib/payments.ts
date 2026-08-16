@@ -17,11 +17,33 @@ export function isValidReferenceSource(value: unknown): value is ReferenceSource
   return typeof value === "string" && (REFERENCE_SOURCES as readonly string[]).includes(value);
 }
 
-const PAYMENT_CHANNEL_KEYS: readonly PaymentChannelKey[] = ["gcash", "maya", "bank_transfer"];
+/** The fixed 3 values `payment_channel_key` (Postgres enum) accepts — see
+ *  the payment-channels-QR-image migration's own comment for why this stays
+ *  a closed set rather than becoming admin-addable at runtime. Exported so
+ *  the admin CRUD routes (`/api/payment-channels/[key]`, `.../qr-image`) can
+ *  validate the `:key` route param against the same list instead of
+ *  duplicating it. */
+export const PAYMENT_CHANNEL_KEYS: readonly PaymentChannelKey[] = ["gcash", "maya", "bank_transfer"];
 
 export function isValidPaymentChannel(value: unknown): value is PaymentChannelKey {
   return typeof value === "string" && (PAYMENT_CHANNEL_KEYS as readonly string[]).includes(value);
 }
+
+/** Admin-facing shape of one `payment_channels` row — used by the
+ *  facility-content editor's "Payment Channels" tab and by the public
+ *  /api/payment-channels GET (which every field here maps onto; the public
+ *  route additionally derives a concatenated `account` string and a resolved
+ *  `qrImageUrl` for backward-compatible checkout consumption). */
+export type PaymentChannelRecord = {
+  key: PaymentChannelKey;
+  displayKey: string;
+  label: string;
+  accountName: string;
+  accountNumber: string;
+  qrPayload: string | null;
+  qrImagePath: string | null;
+  qrImageUrl: string | null;
+};
 
 /** checkout-client.tsx's payment channel tabs use the display key ("GCash",
  *  "Maya", "Bank Transfer") the payment_channels seed's `label`/UI used to
