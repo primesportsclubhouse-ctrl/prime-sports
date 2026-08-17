@@ -17,7 +17,21 @@
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const ENV_VAR_NAME = "RESEND_API_KEY";
-const DEFAULT_FROM = "Prime Sports <onboarding@resend.dev>";
+const DEFAULT_FROM_ADDRESS = "onboarding@resend.dev";
+// RESEND_FROM_EMAIL is documented (.env.local.example, environment-variables.md)
+// as a bare address (e.g. "bookings@primesportsclubhouse.com") — sent as-is with
+// no display name, Gmail/Outlook/etc. fall back to showing the address's raw
+// local-part ("bookings") as the sender name, which reads as unprofessional/
+// spammy. Wrapping it in a display name here (once, in code) fixes that for
+// every email this file sends without asking anyone to reformat the env var.
+const FROM_DISPLAY_NAME = "PrimeSports Clubhouse";
+
+function resolveFromHeader(): string {
+  const address = process.env.RESEND_FROM_EMAIL?.trim() || DEFAULT_FROM_ADDRESS;
+  // Already-formatted ("Name <email>") env values are passed through
+  // untouched rather than double-wrapped.
+  return address.includes("<") ? address : `${FROM_DISPLAY_NAME} <${address}>`;
+}
 
 export type SendEmailResult =
   | { outcome: "sent"; providerMessageId: string }
@@ -131,7 +145,7 @@ async function sendViaResend(to: string, subject: string, html: string): Promise
     };
   }
 
-  const from = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
+  const from = resolveFromHeader();
 
   try {
     const response = await fetch(RESEND_ENDPOINT, {
