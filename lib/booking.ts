@@ -128,6 +128,23 @@ export function todayDateString() {
   return toDateString(new Date());
 }
 
+/** "Aug 14, 6:32 PM" — shared short absolute-timestamp label for anywhere
+ *  displaying a `timestamptz` column to staff (payment submission
+ *  `submitted_at`, etc.). Mirrors verification-queue.tsx's local
+ *  `formatSubmittedAt`, pulled out here so new server-side callers (which
+ *  can't reach a component-local helper) have one shared implementation
+ *  instead of a second copy-pasted formatter. Falls back to the raw ISO
+ *  string if it fails to parse (defensive only — every caller passes a real
+ *  Postgres timestamp). */
+export function formatDateTimeLabel(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+
+  return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 export function toDateString(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");

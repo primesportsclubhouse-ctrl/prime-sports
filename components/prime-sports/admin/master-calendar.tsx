@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import BookingDetailDialog from "@/components/prime-sports/admin/booking-detail-dialog";
+import { toDateString } from "@/lib/booking";
 import {
   CalendarBooking,
-  createAdminBookings,
   formatPrimeDate,
   getSport,
   primeContainerClasses,
@@ -16,7 +16,9 @@ import {
   SportKey,
   sports,
   timeSlots,
+  weekDayNames,
 } from "@/lib/prime-sports";
+import { useRealtimeRefresh } from "@/lib/supabase/realtime";
 
 const TIME_COLUMN_PX = 70;
 const COURT_COLUMN_PX = 170;
@@ -31,6 +33,16 @@ export default function MasterCalendar() {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [activeSport, setActiveSport] = useState<SportKey>("pickleball");
   const [activeCell, setActiveCell] = useState<ActiveCalendarCell | null>(null);
+  const [bookingMap, setBookingMap] = useState<Record<string, CalendarBooking>>({});
+  // Tracks which `dateKey|sport` combination `bookingMap` actually reflects —
+  // `isLoading` is derived from comparing the two rather than a separate
+  // boolean flipped inside the fetch effect (that flip would otherwise be a
+  // setState call with no preceding `await`, which
+  // react-hooks/set-state-in-effect flags — same convention roster-client.tsx
+  // and roster-history.tsx already use for their own date/sport-scoped
+  // fetches).
+  const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const dragRef = useRef({ isDown: false, startX: 0, scrollLeft: 0, moved: false });
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -44,10 +56,80 @@ export default function MasterCalendar() {
 
   const activeSportDefinition = getSport(activeSport);
   const activeSportCourts = activeSportDefinition.courtNames;
-  const bookingMap = useMemo(
-    () => createAdminBookings(activeSportCourts.length, activeSport === "badminton" ? 100 : 0),
-    [activeSportCourts.length, activeSport],
-  );
+  const dateKey = toDateString(currentDate);
+  const requestKey = `${dateKey}|${activeSport}`;
+  const isLoading = loadedRequestKey !== requestKey;
+  const dayLabel = weekDayNames[(currentDate.getDay() + 6) % 7];
+
+  // Loads real bookings (joined to their customer + latest payment
+  // submission) for the currently-viewed date/sport — replaces
+  // createAdminBookings()'s deterministic fake grid. Refetches whenever the
+  // viewed date or active sport changes.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/admin-calendar?date=${encodeURIComponent(dateKey)}&sport=${activeSport}`,
+        );
+        const data = await response.json().catch(() => null);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok) {
+          setLoadError(data?.error ?? "Could not load the calendar.");
+          setBookingMap({});
+          return;
+        }
+
+        setLoadError(null);
+        setBookingMap(data?.bookings && typeof data.bookings === "object" ? data.bookings : {});
+      } catch {
+        if (!cancelled) {
+          setLoadError("Network error — could not load the calendar.");
+          setBookingMap({});
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadedRequestKey(requestKey);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dateKey, activeSport, requestKey]);
+
+  // Live updates: a new booking, a payment submission being approved/
+  // rejected, or a fresh checkout landing on this same date/sport all refresh
+  // the grid here without a manual reload. Falls back to polling internally
+  // if the realtime channel never subscribes (or drops) — see
+  // lib/supabase/realtime.ts.
+  useRealtimeRefresh("admin-master-calendar", ["bookings", "payment_submissions"], () => {
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/admin-calendar?date=${encodeURIComponent(dateKey)}&sport=${activeSport}`,
+        );
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          setLoadError(data?.error ?? "Could not load the calendar.");
+          return;
+        }
+
+        setLoadError(null);
+        setBookingMap(data?.bookings && typeof data.bookings === "object" ? data.bookings : {});
+      } catch {
+        setLoadError("Network error — could not load the calendar.");
+      }
+    })();
+  });
+
   const gridTemplateColumns = `${TIME_COLUMN_PX}px repeat(${activeSportCourts.length}, minmax(${COURT_COLUMN_PX}px, 1fr))`;
   const minTableWidth = TIME_COLUMN_PX + activeSportCourts.length * COURT_COLUMN_PX;
 
@@ -94,7 +176,9 @@ export default function MasterCalendar() {
       <section className={`${containerClassName} py-7`} data-od-id="admin-calendar">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className={primeSectionTitleClass}>Master Booking Calendar</h2>
-          <div style={{ fontSize: 12, opacity: 0.6 }}>Daily schedule · all courts side-by-side</div>
+          <div style={{ fontSize: 12, opacity: 0.6 }}>
+            {loadError ? <span className="text-accent">{loadError}</span> : "Daily schedule · all courts side-by-side"}
+          </div>
         </div>
 
         <div role="tablist" aria-label="Sport" className="mb-4 inline-flex flex-wrap gap-1 rounded-[var(--radius)] border border-border bg-surface-muted p-1">
@@ -126,7 +210,8 @@ export default function MasterCalendar() {
         <div className={primeSurfaceCardClass}>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-muted px-5 py-3.5">
             <div className="[font-family:var(--font-mono)] text-base font-semibold tabular-nums" id="calDate">
-              {formatPrimeDate(currentDate)} · [Day]
+              {formatPrimeDate(currentDate)} · {dayLabel}
+              {isLoading ? <span className="ml-2 text-xs font-medium opacity-50">Loading…</span> : null}
             </div>
             <div className="flex gap-2">
               <button
@@ -215,7 +300,7 @@ export default function MasterCalendar() {
           booking={activeCell.booking}
           sportLabel={activeSportDefinition.label}
           courtLabel={activeCell.courtLabel}
-          date={`${formatPrimeDate(currentDate)} · [Day]`}
+          date={`${formatPrimeDate(currentDate)} · ${dayLabel}`}
           time={activeCell.time}
           onClose={() => setActiveCell(null)}
         />

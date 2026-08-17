@@ -268,52 +268,16 @@ export type CalendarBooking = {
   submitted: string;
 };
 
-const calendarBookingNames = [
-  "[Rivera]",
-  "[Cruz]",
-  "[Santos]",
-  "[Reyes]",
-  "[Tan]",
-  "[Lim]",
-  "[Garcia]",
-  "[Mendoza]",
-  "[Aquino]",
-  "[Bautista]",
-];
-
 const calendarBookingChannels = ["GCash", "Maya", "Bank Transfer"];
 
-/** `courtCount` scopes the mock data to whichever sport's court roster is active
- *  (7 for Pickleball, 4 for Badminton); `seedOffset` gives each sport its own
- *  distinct-looking mock schedule instead of reusing identical hash patterns. */
-export function createAdminBookings(courtCount: number, seedOffset = 0) {
-  const bookings: Record<string, CalendarBooking> = {};
-
-  timeSlots.forEach((_, timeIndex) => {
-    for (let courtIndex = 0; courtIndex < courtCount; courtIndex += 1) {
-      const hash = (timeIndex * 5 + courtIndex * 7 + 3 + seedOffset) % 10;
-
-      if (hash < 5) {
-        const pending = hash === 2;
-        const rate = getHourlyRate(new Date(), operatingHours[timeIndex]);
-
-        bookings[`${timeIndex}-${courtIndex}`] = {
-          name: calendarBookingNames[(timeIndex + courtIndex + seedOffset) % calendarBookingNames.length],
-          pending,
-          ref: `PRS-${100000 + ((timeIndex * 37 + courtIndex * 53 + seedOffset * 11) % 900000)}`,
-          amount: formatCurrency(rate),
-          channel: calendarBookingChannels[(timeIndex + courtIndex) % calendarBookingChannels.length],
-          phone: "[Phone]",
-          email: "[Email]",
-          notes: "[Customer note]",
-          submitted: "[Xm ago]",
-        };
-      }
-    }
-  });
-
-  return bookings;
-}
+// createAdminBookings() (deterministic mock Master Calendar grid, keyed by
+// `${timeIndex}-${courtIndex}`) was removed here — master-calendar.tsx now
+// reads real rows via GET /api/admin-calendar (see that route's own doc
+// comment for which `bookings.status` values actually show as a
+// reservation). CalendarBooking itself stays exported: the real data is
+// shaped to fit it exactly, and QueueHistoryEntry-adjacent
+// createVerificationHistory() below still reuses `calendarBookingChannels`
+// for its own (still-mock, out of scope) resolved-submissions data.
 
 export type QueueHistoryStatus = "approved" | "rejected";
 
