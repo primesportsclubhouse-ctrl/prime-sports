@@ -277,10 +277,10 @@ export default function MasterCalendar() {
                             className={`w-full cursor-pointer rounded px-2 py-1.5 text-left text-[11px] font-semibold transition hover:-translate-y-px hover:shadow-[var(--shadow-sm)] ${booking.pending ? "bg-accent text-foreground" : "bg-accent-secondary text-canvas"}`}
                             onClick={() => setActiveCell({ booking, courtLabel: court, time })}
                           >
-                            <span className="mr-1 text-[10px] [font-family:var(--font-mono)] font-medium opacity-60 tabular-nums">
-                              {time} {booking.pending ? "PENDING" : "CONFIRMED"}
+                            <span className="mr-1 text-[10px] [font-family:var(--font-mono)] font-medium tabular-nums">
+                              {time} {booking.pending ? "[PENDING]" : "[CONFIRMED]"}
                             </span>
-                            {booking.name} — {court}
+                            {booking.name}
                           </button>
                         ) : (
                           <span className="text-[11px] font-normal opacity-30">Open</span>

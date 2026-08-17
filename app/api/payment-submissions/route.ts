@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { parseDateStringLocal, timeSlotToHour24 } from "@/lib/booking";
 import { isValidPaymentChannel, isValidReferenceSource, type PaymentSubmissionQueueItem } from "@/lib/payments";
+import { formatHour12, formatPrimeDate } from "@/lib/prime-sports";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { verifySlotHoldOwnership } from "@/lib/supabase/slot-holds";
 import { getStaffContext } from "@/lib/supabase/staff-auth";
@@ -15,6 +17,39 @@ const RECEIPT_SIGNED_URL_TTL_SECONDS = 300;
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
+
+/** "Court 3 on 20 Aug 2026 at 9:00 AM" — human-readable stand-in for a raw
+ *  booking id whenever an error message needs to refer to which reservation
+ *  it's about. A customer submitting for verification can see their own
+ *  slots right there on the checkout page, but has no way to recognize a
+ *  UUID as "theirs." */
+function friendlySlotLabel(booking: { booking_date: string; time_slot: string }) {
+  const date = formatPrimeDate(parseDateStringLocal(booking.booking_date));
+  const time = formatHour12(timeSlotToHour24(booking.time_slot));
+  return `${date} at ${time}`;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: "not yet reserved",
+  confirmed: "already confirmed",
+  cancelled: "no longer reserved — it was cancelled",
+  no_show: "no longer available",
+};
+
+/** Once a payment is submitted, `bookings_slot_unique_idx` — not this hold —
+ *  is what actually prevents the slot being double-booked (the bookings row
+ *  itself is now `pending_payment`, which already blocks a fresh insert for
+ *  the same court/date/time). The hold's only remaining job past this point
+ *  is letting this browser session recover its own reservation via
+ *  GET /api/bookings, which requires an *active* hold to identify "which
+ *  bookings belong to this session" (bookings has no session_token column —
+ *  see reservation-provider.tsx's fetchFromServer). Manual staff review can
+ *  reasonably take longer than the original ~15-minute decision window, so
+ *  without extending it here, a customer who checks back on checkout later
+ *  would find their own already-submitted reservation has silently vanished
+ *  from their view, even though it's still very much alive and awaiting
+ *  review. 30 days comfortably covers any realistic review turnaround. */
+const PENDING_REVIEW_HOLD_EXTENSION_MS = 30 * 24 * 60 * 60 * 1000;
 
 type CreateSubmissionPayload = {
   sessionToken?: unknown;
@@ -81,10 +116,14 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (bookingError) {
-      return NextResponse.json({ error: bookingError.message, created }, { status: 500 });
+      console.error(`[payment-submissions] Failed to load booking ${bookingId}:`, bookingError.message);
+      return NextResponse.json({ error: "Could not load one of your reserved slots. Please try again.", created }, { status: 500 });
     }
     if (!booking) {
-      return NextResponse.json({ error: `Booking ${bookingId} not found.`, created }, { status: 404 });
+      return NextResponse.json(
+        { error: "One of your reserved slots could not be found — it may have expired. Please head back to Schedule and pick it again.", created },
+        { status: 404 },
+      );
     }
 
     let isOwner: boolean;
@@ -95,17 +134,25 @@ export async function POST(request: NextRequest) {
         sessionToken,
       );
     } catch (error) {
+      console.error(
+        `[payment-submissions] Ownership check failed for booking ${bookingId}:`,
+        error instanceof Error ? error.message : error,
+      );
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Failed to verify slot ownership.", created },
+        { error: "Could not verify your reservation. Please refresh and try again.", created },
         { status: 500 },
       );
     }
     if (!isOwner) {
-      return NextResponse.json({ error: `Not authorized to submit payment for booking ${bookingId}.`, created }, { status: 403 });
+      return NextResponse.json(
+        { error: "That reservation doesn't belong to your current session. Please head back to Schedule and try again.", created },
+        { status: 403 },
+      );
     }
     if (booking.status !== "held" && booking.status !== "pending_payment") {
+      const statusLabel = STATUS_LABELS[booking.status] ?? "no longer available";
       return NextResponse.json(
-        { error: `Booking ${bookingId} is ${booking.status} and can't accept a new payment submission.`, created },
+        { error: `Your ${friendlySlotLabel(booking)} slot is ${statusLabel} and can't accept a new payment submission.`, created },
         { status: 409 },
       );
     }
@@ -126,15 +173,32 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       const isDuplicate = insertError.code === "23505";
-      return NextResponse.json(
-        {
-          error: isDuplicate
-            ? `That reference number was already submitted for booking ${bookingId}.`
-            : insertError.message,
-          created,
-        },
-        { status: isDuplicate ? 409 : 500 },
-      );
+
+      if (isDuplicate) {
+        return NextResponse.json(
+          {
+            error: `That reference number was already submitted for your ${friendlySlotLabel(booking)} slot. Please double-check it or use a different one.`,
+            created,
+          },
+          { status: 409 },
+        );
+      }
+
+      console.error(`[payment-submissions] Insert failed for booking ${bookingId}:`, insertError.message);
+      return NextResponse.json({ error: "Could not save your payment submission. Please try again.", created }, { status: 500 });
+    }
+
+    // Best-effort — logged, not fatal, since the submission itself already
+    // succeeded either way. See PENDING_REVIEW_HOLD_EXTENSION_MS above.
+    const { error: holdExtendError } = await supabase
+      .from("slot_holds")
+      .update({ expires_at: new Date(Date.now() + PENDING_REVIEW_HOLD_EXTENSION_MS).toISOString() })
+      .eq("court_id", booking.court_id)
+      .eq("booking_date", booking.booking_date)
+      .eq("time_slot", booking.time_slot);
+
+    if (holdExtendError) {
+      console.error(`[payment-submissions] Failed to extend hold for booking ${bookingId}:`, holdExtendError.message);
     }
 
     if (booking.status !== "pending_payment") {
@@ -144,7 +208,11 @@ export async function POST(request: NextRequest) {
         .eq("id", bookingId);
 
       if (updateError) {
-        return NextResponse.json({ error: updateError.message, created }, { status: 500 });
+        console.error(`[payment-submissions] Failed to update booking ${bookingId} to pending_payment:`, updateError.message);
+        return NextResponse.json(
+          { error: "Your reference was saved, but we couldn't update the booking status. Please contact staff to confirm.", created },
+          { status: 500 },
+        );
       }
     }
 
@@ -179,7 +247,8 @@ export async function GET(request: NextRequest) {
     .order("submitted_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[payment-submissions] Failed to load the queue:", error.message);
+    return NextResponse.json({ error: "Could not load the verification queue. Please try again." }, { status: 500 });
   }
 
   const items: PaymentSubmissionQueueItem[] = await Promise.all(

@@ -76,7 +76,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .maybeSingle();
 
   if (existingError) {
-    return NextResponse.json({ error: existingError.message }, { status: 500 });
+    console.error("[payment-channels] Failed to look up payment channel before QR upload:", existingError.message);
+    return NextResponse.json({ error: "Could not upload this QR image. Please try again." }, { status: 500 });
   }
   if (!existing) {
     return NextResponse.json({ error: "Payment channel not found." }, { status: 404 });
@@ -91,7 +92,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    console.error("[payment-channels] Failed to upload QR image:", uploadError.message);
+    return NextResponse.json({ error: "Could not upload this QR image. Please try again." }, { status: 500 });
   }
 
   const { error: updateError } = await supabase
@@ -103,7 +105,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Roll back the just-uploaded object rather than leaving an orphan file
     // the DB row doesn't point to.
     await supabase.storage.from(PAYMENT_QR_BUCKET).remove([path]);
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    console.error("[payment-channels] Failed to save QR image path:", updateError.message);
+    return NextResponse.json({ error: "Could not upload this QR image. Please try again." }, { status: 500 });
   }
 
   // Best-effort cleanup of the previous image, if any — never fails the
@@ -125,10 +128,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const channels = await fetchPaymentChannels(supabase);
     return NextResponse.json({ channels }, { status: 201 });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload payment channels." },
-      { status: 500 },
+    console.error(
+      "[payment-channels] Failed to reload payment channels after QR upload:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload payment channels. Please try again." }, { status: 500 });
   }
 }
 
@@ -162,7 +166,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     .maybeSingle();
 
   if (existingError) {
-    return NextResponse.json({ error: existingError.message }, { status: 500 });
+    console.error("[payment-channels] Failed to look up payment channel before QR removal:", existingError.message);
+    return NextResponse.json({ error: "Could not remove this QR image. Please try again." }, { status: 500 });
   }
   if (!existing) {
     return NextResponse.json({ error: "Payment channel not found." }, { status: 404 });
@@ -176,7 +181,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     .eq("key", key satisfies PaymentChannelKey);
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    console.error("[payment-channels] Failed to clear QR image path:", updateError.message);
+    return NextResponse.json({ error: "Could not remove this QR image. Please try again." }, { status: 500 });
   }
 
   if (previousPath) {
@@ -195,9 +201,10 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const channels = await fetchPaymentChannels(supabase);
     return NextResponse.json({ channels });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload payment channels." },
-      { status: 500 },
+    console.error(
+      "[payment-channels] Failed to reload payment channels after QR removal:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload payment channels. Please try again." }, { status: 500 });
   }
 }

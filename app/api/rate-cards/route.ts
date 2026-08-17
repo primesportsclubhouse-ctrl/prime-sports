@@ -24,10 +24,8 @@ export async function GET() {
     const rates = await fetchUniformRates(supabase);
     return NextResponse.json({ rates });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load rate cards." },
-      { status: 500 },
-    );
+    console.error("[rate-cards] Failed to load rates:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not load rate cards. Please try again." }, { status: 500 });
   }
 }
 
@@ -103,10 +101,8 @@ export async function PATCH(request: NextRequest) {
   try {
     await saveUniformRates(supabase, rates);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to save rate cards." },
-      { status: 500 },
-    );
+    console.error("[rate-cards] Failed to save rates:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not save rate cards. Please try again." }, { status: 500 });
   }
 
   // Best-effort side effect — never blocks the response, see

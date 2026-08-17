@@ -79,7 +79,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[faq-items] Failed to update FAQ item:", error.message);
+    return NextResponse.json({ error: "Could not save this FAQ item. Please try again." }, { status: 500 });
   }
   if (!data) {
     return NextResponse.json({ error: "FAQ item not found." }, { status: 404 });
@@ -97,10 +98,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const faq = await fetchFaqItems(supabase);
     return NextResponse.json({ faq });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload FAQ items." },
-      { status: 500 },
+    console.error(
+      "[faq-items] Failed to reload FAQ items after update:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload FAQ items. Please try again." }, { status: 500 });
   }
 }
 
@@ -129,7 +131,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[faq-items] Failed to delete FAQ item:", error.message);
+    return NextResponse.json({ error: "Could not delete this FAQ item. Please try again." }, { status: 500 });
   }
   if (!data) {
     return NextResponse.json({ error: "FAQ item not found." }, { status: 404 });
@@ -147,9 +150,10 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const faq = await fetchFaqItems(supabase);
     return NextResponse.json({ faq });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload FAQ items." },
-      { status: 500 },
+    console.error(
+      "[faq-items] Failed to reload FAQ items after delete:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload FAQ items. Please try again." }, { status: 500 });
   }
 }

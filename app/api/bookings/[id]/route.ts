@@ -45,7 +45,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     .maybeSingle();
 
   if (bookingError) {
-    return NextResponse.json({ error: bookingError.message }, { status: 500 });
+    console.error(`[bookings/${id}] Failed to load booking:`, bookingError.message);
+    return NextResponse.json({ error: "Could not load that booking. Please try again." }, { status: 500 });
   }
   if (!booking) {
     return NextResponse.json({ error: "Booking not found." }, { status: 404 });
@@ -61,10 +62,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     isOwner = await verifySlotHoldOwnership(supabase, slotKey, sessionToken);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to verify slot ownership." },
-      { status: 500 },
-    );
+    console.error(`[bookings/${id}] Ownership check failed:`, error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not verify your reservation. Please try again." }, { status: 500 });
   }
   if (!isOwner) {
     return NextResponse.json({ error: "Not authorized to modify this booking." }, { status: 403 });
@@ -79,8 +78,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   if (updateError) {
     const isConflict = updateError.code === "23505";
+
+    if (!isConflict) {
+      console.error(`[bookings/${id}] Status update failed:`, updateError.message);
+    }
+
     return NextResponse.json(
-      { error: isConflict ? "Another booking already exists for that slot." : updateError.message },
+      { error: isConflict ? "Another booking already exists for that slot." : "Could not update that booking. Please try again." },
       { status: isConflict ? 409 : 500 },
     );
   }

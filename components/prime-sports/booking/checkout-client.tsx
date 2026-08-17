@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import BookingSteps from "@/components/prime-sports/booking/booking-steps";
@@ -18,6 +19,7 @@ import {
   getSportCourtLabel,
   isDaytimeHour,
   operatingHours,
+  primeButtonOutlineClass,
   primeButtonPrimaryClass,
   primeContainerClasses,
   primeMetaLabelClass,
@@ -59,6 +61,18 @@ type UniformRates = { weekday: RateTier; weekend: RateTier };
 export default function CheckoutClient() {
   const { showToast } = useToast();
   const { contact, bookings, sessionToken, refreshBookings } = useReservation();
+  // `bookings` is every reservation this browser session has ever touched —
+  // not just the ones about to be paid for right now. Once the hold-extension
+  // fix (see /api/payment-submissions) keeps an already-submitted booking
+  // recoverable for weeks instead of ~15 minutes, a customer who comes back
+  // to book an *additional*, unrelated court would otherwise see their old
+  // submitted reservation mixed into "Your Reservation" — double-counted in
+  // the total, and re-submitted alongside the new one if they hit Submit.
+  // Splitting on status keeps the checkout form (upload, reference, waiver,
+  // submit) scoped only to what's actually new and unsubmitted, while
+  // already-submitted/confirmed bookings are shown read-only, separately.
+  const activeBookings = bookings.filter((item) => item.status !== "pending_payment" && item.status !== "confirmed");
+  const submittedBookings = bookings.filter((item) => item.status === "pending_payment" || item.status === "confirmed");
   const [paymentChannels, setPaymentChannels] = useState<PaymentChannel[]>(FALLBACK_CHANNELS);
   const [activeChannelIndex, setActiveChannelIndex] = useState(0);
   const [upload, setUpload] = useState<UploadState | null>(null);
@@ -72,7 +86,6 @@ export default function CheckoutClient() {
   const [isDetectingReference, setIsDetectingReference] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Real pricing from the `rate_cards` table — same GET /api/rate-cards
   // pricing-cards.tsx and booking-client.tsx already read. Starts `null` and
@@ -267,8 +280,10 @@ export default function CheckoutClient() {
     }
   }
 
-  const bookingIds = bookings.map((item) => item.id).filter((id): id is string => Boolean(id));
-  const allWaiversAccepted = bookings.length > 0 && bookings.every((item) => item.waiverAccepted);
+  // Scoped to activeBookings only — an already-submitted booking has its own
+  // waiver/reference on file and must never be swept into a new submission.
+  const bookingIds = activeBookings.map((item) => item.id).filter((id): id is string => Boolean(id));
+  const allWaiversAccepted = activeBookings.length > 0 && activeBookings.every((item) => item.waiverAccepted);
 
   async function handleWaiverAccept() {
     if (!sessionToken || bookingIds.length === 0) {
@@ -335,8 +350,10 @@ export default function CheckoutClient() {
         return;
       }
 
+      // No local "submitted" flag to set — refreshBookings() pulls the
+      // now-pending_payment status back from the server, and isSubmitted
+      // below is derived from that, so it takes effect the same render.
       await refreshBookings();
-      setIsSubmitted(true);
       setIsSubmitting(false);
       showToast({
         title: "Submitted for verification",
@@ -369,8 +386,18 @@ export default function CheckoutClient() {
 
   const containerClassName = `${primeContainerClasses.default} grid grid-cols-[1fr_1.1fr] gap-8 py-10 max-[980px]:grid-cols-1`;
   const panelClassName = primeSurfacePanelClass;
+  // Derived from server-side status rather than a local-only flag — a local
+  // flag resets to `false` on every fresh page load, so reloading checkout
+  // (or coming back later while staff review is in progress) would
+  // otherwise show the plain, re-editable form again even though the
+  // reference/receipt were already successfully submitted. "Submitted" here
+  // specifically means *this* checkout batch: nothing new left to submit,
+  // and at least one booking already went through — not that every booking
+  // this session has ever made is submitted (see activeBookings above).
+  const isSubmitted = activeBookings.length === 0 && submittedBookings.length > 0;
+  const isConfirmed = isSubmitted && submittedBookings.every((item) => item.status === "confirmed");
   const canSubmit =
-    bookings.length > 0 &&
+    activeBookings.length > 0 &&
     Boolean(receiptPath) &&
     Boolean(reference.trim()) &&
     allWaiversAccepted &&
@@ -378,7 +405,7 @@ export default function CheckoutClient() {
     !isSubmitted;
   const stepStatuses: BookingStepStatus[] = ["done", "done", "done", isSubmitted ? "done" : "current"];
   const activeChannel = paymentChannels[activeChannelIndex] ?? paymentChannels[0];
-  const total = bookings.reduce((sum, item) => sum + getDisplayRate(item.date, operatingHours[item.timeIndex]), 0);
+  const total = activeBookings.reduce((sum, item) => sum + getDisplayRate(item.date, operatingHours[item.timeIndex]), 0);
 
   return (
     // Cream band: everything from the step timeline down to (but not including) the
@@ -409,14 +436,55 @@ export default function CheckoutClient() {
             </p>
           </div>
 
+          {submittedBookings.length > 0 ? (
+            <div className="mt-5 border-t border-border pt-5">
+              <p className={primeMetaLabelClass}>Previously Submitted</p>
+              <ul className="flex flex-col gap-2.5" data-od-id="submitted-line-items">
+                {submittedBookings.map((item) => {
+                  const rate = getDisplayRate(item.date, operatingHours[item.timeIndex]);
+                  const key = `${item.date.toDateString()}-${item.sport}-${item.courtIndex}-${item.timeIndex}`;
+                  const itemConfirmed = item.status === "confirmed";
+
+                  return (
+                    <li
+                      key={key}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border border-border bg-canvas px-4 py-3 text-foreground opacity-80"
+                    >
+                      <div className="flex flex-wrap items-center gap-3 text-[13px]">
+                        <span className="[font-family:var(--font-mono)] font-semibold tabular-nums">{formatPrimeDate(item.date)}</span>
+                        <span className="font-semibold">{getSportCourtLabel(item.sport, item.courtIndex)}</span>
+                        <span className="[font-family:var(--font-mono)] font-semibold tabular-nums">{timeSlots[item.timeIndex]}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="[font-family:var(--font-mono)] text-sm font-semibold tabular-nums">{formatCurrency(rate)}</span>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] ${
+                            itemConfirmed ? "border-success text-success" : "border-accent-secondary text-accent-secondary"
+                          }`}
+                        >
+                          {itemConfirmed ? "Confirmed" : "Pending"}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+
           <div className="mt-5 border-t border-border pt-5">
-            {bookings.length === 0 ? (
+            {submittedBookings.length > 0 ? <p className={primeMetaLabelClass}>New Selections</p> : null}
+            {activeBookings.length === 0 ? (
               <p className="text-sm">
-                <span className={primePlaceholderClass}>[No slots reserved yet — head back to schedule a court]</span>
+                <span className={primePlaceholderClass}>
+                  {submittedBookings.length > 0
+                    ? "[No new slots added yet]"
+                    : "[No slots reserved yet — head back to schedule a court]"}
+                </span>
               </p>
             ) : (
               <ul className="flex flex-col gap-2.5" data-od-id="reservation-line-items">
-                {bookings.map((item) => {
+                {activeBookings.map((item) => {
                   const rate = getDisplayRate(item.date, operatingHours[item.timeIndex]);
                   const key = `${item.date.toDateString()}-${item.sport}-${item.courtIndex}-${item.timeIndex}`;
 
@@ -442,7 +510,7 @@ export default function CheckoutClient() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold uppercase tracking-[0.04em]">Total Amount</span>
               <span className="text-2xl font-bold [font-family:var(--font-mono)] tabular-nums text-accent-secondary">
-                {bookings.length ? formatCurrency(total) : <span className={primePlaceholderClass}>[Total]</span>}
+                {activeBookings.length ? formatCurrency(total) : <span className={primePlaceholderClass}>[Total]</span>}
               </span>
             </div>
           </div>
@@ -524,6 +592,15 @@ export default function CheckoutClient() {
                 <p className="mt-1.5 text-sm opacity-65">Drop your payment screenshot and confirm the extracted reference.</p>
               </div>
             </div>
+            {activeBookings.length === 0 && bookings.length > 0 ? (
+              <div className="mt-5 rounded-[var(--radius)] border border-dashed border-border bg-surface-muted p-8 text-center text-sm">
+                <p className="opacity-70">You don&apos;t have any new reservations to submit right now.</p>
+                <Link href="/reserve/schedule" className={`${primeButtonOutlineClass} mt-4 inline-flex`}>
+                  + Add Another Court
+                </Link>
+              </div>
+            ) : (
+              <>
             {!upload ? (
               <>
                 <button
@@ -663,7 +740,7 @@ export default function CheckoutClient() {
             <div className="mt-6 border-t border-border pt-6">
               <WaiverFormDialog
                 isAccepted={allWaiversAccepted}
-                disabled={bookings.length === 0 || isSubmitted}
+                disabled={activeBookings.length === 0 || isSubmitted}
                 onAccept={handleWaiverAccept}
               />
               <p className={`mt-2 text-xs ${allWaiversAccepted ? "font-semibold text-success" : "opacity-60"}`}>
@@ -687,6 +764,34 @@ export default function CheckoutClient() {
                 {isSubmitted ? "Submitted ✓" : isSubmitting ? "Submitting…" : "Submit for Verification →"}
               </button>
             </div>
+              </>
+            )}
+
+            {isSubmitted ? (
+              <div
+                role="status"
+                className={`mt-4 flex items-start gap-3 rounded-[var(--radius)] border px-4 py-3.5 text-[13px] ${
+                  isConfirmed ? "border-success bg-[rgba(34,197,94,0.12)]" : "border-accent-secondary bg-[rgba(212,163,89,0.12)]"
+                }`}
+              >
+                <span
+                  className={`mt-0.5 font-bold ${isConfirmed ? "text-success" : "text-accent-secondary"}`}
+                  aria-hidden="true"
+                >
+                  {isConfirmed ? "✓" : "●"}
+                </span>
+                <div>
+                  <p className="font-semibold text-foreground">
+                    {isConfirmed ? "Booking confirmed" : "Court held — pending verification"}
+                  </p>
+                  <p className="mt-0.5 opacity-70">
+                    {isConfirmed
+                      ? "Your payment has been verified and your court is booked."
+                      : "Your reference has been submitted. Your court stays held while our staff verifies your payment — you'll be notified once it's approved."}
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>

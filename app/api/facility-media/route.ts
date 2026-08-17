@@ -29,10 +29,8 @@ export async function GET() {
     const media = await fetchFacilityMedia(supabase);
     return NextResponse.json({ media });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load facility media." },
-      { status: 500 },
-    );
+    console.error("[facility-media] Failed to load facility media:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not load facility media. Please try again." }, { status: 500 });
   }
 }
 
@@ -107,10 +105,11 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     const status = error.code === "23505" ? 409 : 500;
-    return NextResponse.json(
-      { error: status === 409 ? `A media card with slug "${slug}" already exists.` : error.message },
-      { status },
-    );
+    if (status === 409) {
+      return NextResponse.json({ error: `A media card with slug "${slug}" already exists.` }, { status });
+    }
+    console.error("[facility-media] Failed to create media card:", error.message);
+    return NextResponse.json({ error: "Could not save this media card. Please try again." }, { status });
   }
 
   void recordAuditLog({
@@ -125,9 +124,10 @@ export async function POST(request: NextRequest) {
     const media = await fetchFacilityMedia(supabase);
     return NextResponse.json({ media }, { status: 201 });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload facility media." },
-      { status: 500 },
+    console.error(
+      "[facility-media] Failed to reload facility media after create:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload facility media. Please try again." }, { status: 500 });
   }
 }

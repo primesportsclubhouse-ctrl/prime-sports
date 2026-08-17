@@ -72,10 +72,8 @@ export async function GET(request: NextRequest) {
   try {
     courts = await resolveCourtsForSport(supabase, sportParam);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to resolve courts for sport." },
-      { status: 500 },
-    );
+    console.error("[availability-blocks] Failed to resolve courts:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not load courts for this sport. Please try again." }, { status: 500 });
   }
 
   const courtIds = courts.map((court) => court.id);
@@ -93,7 +91,8 @@ export async function GET(request: NextRequest) {
     .lte("blocked_date", toParam);
 
   if (blocksError) {
-    return NextResponse.json({ error: blocksError.message }, { status: 500 });
+    console.error("[availability-blocks] Failed to load blocks:", blocksError.message);
+    return NextResponse.json({ error: "Could not load existing blocks for this week. Please try again." }, { status: 500 });
   }
 
   const blocks: AvailabilityBlockEntry[] = (rows ?? []).map((row) => ({
@@ -174,10 +173,8 @@ export async function POST(request: NextRequest) {
   try {
     courts = await resolveCourtsForSport(supabase, sportKey);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to resolve courts for sport." },
-      { status: 500 },
-    );
+    console.error("[availability-blocks] Failed to resolve courts:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not load courts for this sport. Please try again." }, { status: 500 });
   }
 
   const courtIds = courts.map((court) => court.id);
@@ -196,7 +193,7 @@ export async function POST(request: NextRequest) {
     }
     if (typeof courtIndex !== "number" || !Number.isInteger(courtIndex) || !courtIdByIndex.has(courtIndex)) {
       return NextResponse.json(
-        { error: `courtIndex ${String(courtIndex)} is not a valid court for ${sportKey}.` },
+        { error: `One of the selected courts isn't valid for ${sportKey}. Please refresh and try again.` },
         { status: 400 },
       );
     }
@@ -219,7 +216,8 @@ export async function POST(request: NextRequest) {
       .in("blocked_date", Array.from(dateSet));
 
     if (deleteError) {
-      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+      console.error("[availability-blocks] Failed to clear existing blocks:", deleteError.message);
+      return NextResponse.json({ error: "Could not save availability changes. Please try again." }, { status: 500 });
     }
   }
 
@@ -232,7 +230,8 @@ export async function POST(request: NextRequest) {
     );
 
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      console.error("[availability-blocks] Failed to save new blocks:", insertError.message);
+      return NextResponse.json({ error: "Could not save availability changes. Please try again." }, { status: 500 });
     }
   }
 

@@ -45,14 +45,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .maybeSingle();
 
   if (submissionError) {
-    return NextResponse.json({ error: submissionError.message }, { status: 500 });
+    console.error(`[payment-submissions/${id}/reject] Failed to load submission:`, submissionError.message);
+    return NextResponse.json({ error: "Could not load that submission. Please try again." }, { status: 500 });
   }
   if (!submission) {
     return NextResponse.json({ error: "Payment submission not found." }, { status: 404 });
   }
   if (submission.status !== "pending") {
+    const statusLabel = submission.status === "approved" ? "approved" : "rejected";
     return NextResponse.json(
-      { error: `This submission was already ${submission.status}.` },
+      { error: `This submission was already ${statusLabel} — refresh the queue to see its current state.` },
       { status: 409 },
     );
   }
@@ -63,7 +65,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .eq("id", id);
 
   if (submissionUpdateError) {
-    return NextResponse.json({ error: submissionUpdateError.message }, { status: 500 });
+    console.error(`[payment-submissions/${id}/reject] Failed to update submission status:`, submissionUpdateError.message);
+    return NextResponse.json({ error: "Could not reject this submission. Please try again." }, { status: 500 });
   }
 
   const { data: booking, error: bookingSelectError } = await supabase
@@ -73,7 +76,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .maybeSingle();
 
   if (bookingSelectError) {
-    return NextResponse.json({ error: bookingSelectError.message }, { status: 500 });
+    console.error(`[payment-submissions/${id}/reject] Failed to load linked booking:`, bookingSelectError.message);
+    return NextResponse.json({ error: "Submission rejected, but the booking couldn't be loaded. Please check it manually." }, { status: 500 });
   }
   if (!booking) {
     return NextResponse.json({ error: "Linked booking not found." }, { status: 404 });
@@ -87,7 +91,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .single();
 
   if (bookingUpdateError) {
-    return NextResponse.json({ error: bookingUpdateError.message }, { status: 500 });
+    console.error(`[payment-submissions/${id}/reject] Failed to cancel booking:`, bookingUpdateError.message);
+    return NextResponse.json({ error: "Submission rejected, but the booking couldn't be cancelled. Please cancel it manually." }, { status: 500 });
   }
 
   await freeSlotHold(supabase, { courtId: booking.court_id, bookingDate: booking.booking_date, timeSlot: booking.time_slot });

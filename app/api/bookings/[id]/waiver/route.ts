@@ -45,7 +45,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .maybeSingle();
 
   if (bookingError) {
-    return NextResponse.json({ error: bookingError.message }, { status: 500 });
+    console.error(`[bookings/${id}/waiver] Failed to load booking:`, bookingError.message);
+    return NextResponse.json({ error: "Could not load that booking. Please try again." }, { status: 500 });
   }
   if (!booking) {
     return NextResponse.json({ error: "Booking not found." }, { status: 404 });
@@ -59,10 +60,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       sessionToken,
     );
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to verify slot ownership." },
-      { status: 500 },
-    );
+    console.error(`[bookings/${id}/waiver] Ownership check failed:`, error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not verify your reservation. Please try again." }, { status: 500 });
   }
   if (!isOwner) {
     return NextResponse.json({ error: "Not authorized to modify this booking." }, { status: 403 });
@@ -76,10 +75,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .maybeSingle();
 
   if (waiverVersionError) {
-    return NextResponse.json({ error: waiverVersionError.message }, { status: 500 });
+    console.error(`[bookings/${id}/waiver] Failed to load the current waiver version:`, waiverVersionError.message);
+    return NextResponse.json({ error: "Could not save your acceptance. Please try again." }, { status: 500 });
   }
   if (!waiverVersion) {
-    return NextResponse.json({ error: "No published waiver version is configured." }, { status: 500 });
+    console.error(`[bookings/${id}/waiver] No published waiver version is configured.`);
+    return NextResponse.json({ error: "The waiver isn't available right now — please contact staff." }, { status: 500 });
   }
 
   // Same forwarded-header convention Next's own request-context APIs read
@@ -95,7 +96,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   if (acceptanceError) {
-    return NextResponse.json({ error: acceptanceError.message }, { status: 500 });
+    console.error(`[bookings/${id}/waiver] Failed to record acceptance:`, acceptanceError.message);
+    return NextResponse.json({ error: "Could not save your acceptance. Please try again." }, { status: 500 });
   }
 
   if (!booking.waiver_accepted) {
@@ -105,7 +107,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .eq("id", booking.id);
 
     if (bookingUpdateError) {
-      return NextResponse.json({ error: bookingUpdateError.message }, { status: 500 });
+      console.error(`[bookings/${id}/waiver] Failed to flag booking as waived:`, bookingUpdateError.message);
+      return NextResponse.json({ error: "Could not save your acceptance. Please try again." }, { status: 500 });
     }
   }
 

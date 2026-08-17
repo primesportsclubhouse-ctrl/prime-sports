@@ -23,10 +23,8 @@ export async function GET() {
     const settings = await fetchFacilitySettings(supabase);
     return NextResponse.json({ settings });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load facility settings." },
-      { status: 500 },
-    );
+    console.error("[facility-settings] Failed to load facility settings:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not load facility settings. Please try again." }, { status: 500 });
   }
 }
 
@@ -84,10 +82,11 @@ export async function PATCH(request: NextRequest) {
   try {
     current = await fetchFacilitySettings(supabase);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load current facility settings." },
-      { status: 500 },
+    console.error(
+      "[facility-settings] Failed to load current facility settings before merge:",
+      error instanceof Error ? error.message : error,
     );
+    return NextResponse.json({ error: "Could not load current facility settings. Please try again." }, { status: 500 });
   }
 
   const next = {
@@ -120,9 +119,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ settings });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to save facility settings." },
-      { status: 500 },
-    );
+    console.error("[facility-settings] Failed to save facility settings:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not save facility settings. Please try again." }, { status: 500 });
   }
 }

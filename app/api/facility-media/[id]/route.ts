@@ -110,10 +110,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   if (error) {
     const status = error.code === "23505" ? 409 : 500;
-    return NextResponse.json(
-      { error: status === 409 ? "Another media card already uses that slug." : error.message },
-      { status },
-    );
+    if (status === 409) {
+      return NextResponse.json({ error: "Another media card already uses that slug." }, { status });
+    }
+    console.error("[facility-media] Failed to update media card:", error.message);
+    return NextResponse.json({ error: "Could not save this media card. Please try again." }, { status });
   }
   if (!data) {
     return NextResponse.json({ error: "Media card not found." }, { status: 404 });
@@ -131,10 +132,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const media = await fetchFacilityMedia(supabase);
     return NextResponse.json({ media });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload facility media." },
-      { status: 500 },
+    console.error(
+      "[facility-media] Failed to reload facility media after update:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload facility media. Please try again." }, { status: 500 });
   }
 }
 
@@ -163,7 +165,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[facility-media] Failed to delete media card:", error.message);
+    return NextResponse.json({ error: "Could not delete this media card. Please try again." }, { status: 500 });
   }
   if (!data) {
     return NextResponse.json({ error: "Media card not found." }, { status: 404 });
@@ -181,9 +184,10 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const media = await fetchFacilityMedia(supabase);
     return NextResponse.json({ media });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload facility media." },
-      { status: 500 },
+    console.error(
+      "[facility-media] Failed to reload facility media after delete:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload facility media. Please try again." }, { status: 500 });
   }
 }

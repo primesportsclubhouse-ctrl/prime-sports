@@ -87,7 +87,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[payment-channels] Failed to update payment channel:", error.message);
+    return NextResponse.json({ error: "Could not save this payment channel. Please try again." }, { status: 500 });
   }
   if (!data) {
     return NextResponse.json({ error: "Payment channel not found." }, { status: 404 });
@@ -105,9 +106,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const channels = await fetchPaymentChannels(supabase);
     return NextResponse.json({ channels });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload payment channels." },
-      { status: 500 },
+    console.error(
+      "[payment-channels] Failed to reload payment channels after update:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload payment channels. Please try again." }, { status: 500 });
   }
 }

@@ -155,7 +155,8 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (courtError) {
-    return NextResponse.json({ error: courtError.message }, { status: 500 });
+    console.error(`[bookings] Failed to look up court "${courtName}":`, courtError.message);
+    return NextResponse.json({ error: "Could not look up that court. Please try again." }, { status: 500 });
   }
   if (!court) {
     return NextResponse.json(
@@ -187,10 +188,8 @@ export async function POST(request: NextRequest) {
 
     pricePhp = rate;
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to look up the current rate." },
-      { status: 500 },
-    );
+    console.error("[bookings] Rate lookup failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not look up the current rate. Please try again." }, { status: 500 });
   }
 
   let customerId: string;
@@ -201,10 +200,8 @@ export async function POST(request: NextRequest) {
       phone: phone.trim(),
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to save contact details." },
-      { status: 500 },
-    );
+    console.error("[bookings] Failed to save contact details:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not save your contact details. Please try again." }, { status: 500 });
   }
 
   const { data: rawBooking, error: draftError } = await supabase
@@ -228,13 +225,18 @@ export async function POST(request: NextRequest) {
     // "someone else got there first", it's "this slot isn't bookable at all
     // right now."
     const isBlocked = draftError.code === "BLK01";
+
+    if (!isConflict && !isBlocked) {
+      console.error("[bookings] create_booking_draft failed:", draftError.message);
+    }
+
     return NextResponse.json(
       {
         error: isConflict
           ? "That slot was just taken by someone else — pick another time."
           : isBlocked
             ? "This slot is currently closed by staff — pick another time."
-            : draftError.message,
+            : "Could not reserve that slot. Please try again.",
       },
       { status: isConflict || isBlocked ? 409 : 500 },
     );
@@ -293,7 +295,8 @@ export async function GET(request: NextRequest) {
     .gt("expires_at", new Date().toISOString());
 
   if (holdsError) {
-    return NextResponse.json({ error: holdsError.message }, { status: 500 });
+    console.error("[bookings] Failed to load session holds:", holdsError.message);
+    return NextResponse.json({ error: "Could not load your reservations. Please try again." }, { status: 500 });
   }
 
   if (!holds || holds.length === 0) {
@@ -309,7 +312,8 @@ export async function GET(request: NextRequest) {
     .not("status", "in", "(cancelled,no_show)");
 
   if (bookingsError) {
-    return NextResponse.json({ error: bookingsError.message }, { status: 500 });
+    console.error("[bookings] Failed to load bookings for session holds:", bookingsError.message);
+    return NextResponse.json({ error: "Could not load your reservations. Please try again." }, { status: 500 });
   }
 
   const holdKeys = new Set(holds.map((hold) => `${hold.court_id}|${hold.booking_date}|${hold.time_slot}`));

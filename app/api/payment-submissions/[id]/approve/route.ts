@@ -36,14 +36,16 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     .maybeSingle();
 
   if (submissionError) {
-    return NextResponse.json({ error: submissionError.message }, { status: 500 });
+    console.error(`[payment-submissions/${id}/approve] Failed to load submission:`, submissionError.message);
+    return NextResponse.json({ error: "Could not load that submission. Please try again." }, { status: 500 });
   }
   if (!submission) {
     return NextResponse.json({ error: "Payment submission not found." }, { status: 404 });
   }
   if (submission.status !== "pending") {
+    const statusLabel = submission.status === "approved" ? "approved" : "rejected";
     return NextResponse.json(
-      { error: `This submission was already ${submission.status}.` },
+      { error: `This submission was already ${statusLabel} — refresh the queue to see its current state.` },
       { status: 409 },
     );
   }
@@ -54,7 +56,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     .eq("id", id);
 
   if (submissionUpdateError) {
-    return NextResponse.json({ error: submissionUpdateError.message }, { status: 500 });
+    console.error(`[payment-submissions/${id}/approve] Failed to update submission status:`, submissionUpdateError.message);
+    return NextResponse.json({ error: "Could not approve this submission. Please try again." }, { status: 500 });
   }
 
   const { data: bookingRow, error: bookingUpdateError } = await supabase
@@ -67,7 +70,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     .single();
 
   if (bookingUpdateError) {
-    return NextResponse.json({ error: bookingUpdateError.message }, { status: 500 });
+    console.error(`[payment-submissions/${id}/approve] Failed to confirm booking:`, bookingUpdateError.message);
+    return NextResponse.json({ error: "Submission approved, but the booking couldn't be confirmed. Please check the booking manually." }, { status: 500 });
   }
 
   const booking = bookingRow as unknown as {

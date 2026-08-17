@@ -21,10 +21,8 @@ export async function GET() {
     const faq = await fetchFaqItems(supabase);
     return NextResponse.json({ faq });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load FAQ items." },
-      { status: 500 },
-    );
+    console.error("[faq-items] Failed to load FAQ items:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Could not load FAQ items. Please try again." }, { status: 500 });
   }
 }
 
@@ -80,7 +78,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[faq-items] Failed to create FAQ item:", error.message);
+    return NextResponse.json({ error: "Could not save this FAQ item. Please try again." }, { status: 500 });
   }
 
   void recordAuditLog({
@@ -95,9 +94,10 @@ export async function POST(request: NextRequest) {
     const faq = await fetchFaqItems(supabase);
     return NextResponse.json({ faq }, { status: 201 });
   } catch (fetchError) {
-    return NextResponse.json(
-      { error: fetchError instanceof Error ? fetchError.message : "Failed to reload FAQ items." },
-      { status: 500 },
+    console.error(
+      "[faq-items] Failed to reload FAQ items after create:",
+      fetchError instanceof Error ? fetchError.message : fetchError,
     );
+    return NextResponse.json({ error: "Could not reload FAQ items. Please try again." }, { status: 500 });
   }
 }
