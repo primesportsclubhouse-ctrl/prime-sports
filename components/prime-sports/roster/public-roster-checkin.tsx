@@ -268,7 +268,7 @@ export default function PublicRosterCheckin({ bookingId }: PublicRosterCheckinPr
 
       {!session || !session.active ? (
         <div className="mt-6 rounded-[var(--radius)] border border-dashed border-border bg-surface-muted p-8 text-center text-[13px] opacity-70">
-          Your organizer hasn&apos;t started check-in yet — this page will update once your court session begins.
+          A PrimeSports staff member hasn&apos;t started check-in yet — this page will update once your court session begins.
         </div>
       ) : (
         <div className="mt-6" data-od-id="public-roster-entries">

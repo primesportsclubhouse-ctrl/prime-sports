@@ -264,7 +264,6 @@ export type CalendarBooking = {
   channel: string;
   phone: string;
   email: string;
-  notes: string;
   submitted: string;
 };
 

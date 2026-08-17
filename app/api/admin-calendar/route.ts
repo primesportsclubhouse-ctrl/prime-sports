@@ -93,13 +93,13 @@ export async function GET(request: NextRequest) {
   // whichever the query happens to return first).
   const latestSubmissionByBookingId = new Map<
     string,
-    { reference_no: string; channel: PaymentChannelKey; submitted_at: string; notes: string | null }
+    { reference_no: string; channel: PaymentChannelKey; submitted_at: string }
   >();
 
   if (bookingIds.length > 0) {
     const { data: submissions, error: submissionsError } = await supabase
       .from("payment_submissions")
-      .select("booking_id, reference_no, channel, submitted_at, notes")
+      .select("booking_id, reference_no, channel, submitted_at")
       .in("booking_id", bookingIds)
       .order("submitted_at", { ascending: false });
 
@@ -140,7 +140,6 @@ export async function GET(request: NextRequest) {
       channel: submission ? channelToDisplayKey(submission.channel) : DASH,
       phone: customer?.phone ?? DASH,
       email: customer?.email ?? DASH,
-      notes: submission?.notes ?? DASH,
       submitted: submission ? formatDateTimeLabel(submission.submitted_at) : DASH,
     };
 

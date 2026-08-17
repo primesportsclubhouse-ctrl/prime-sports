@@ -116,10 +116,6 @@ export default function BookingDetailDialog({
               <dt className={primeMetaLabelClass}>Email</dt>
               <dd className="m-0 text-[13px] [font-family:var(--font-mono)] font-semibold tabular-nums">{booking.email}</dd>
             </div>
-            <div className="col-span-2">
-              <dt className={primeMetaLabelClass}>Customer Notes</dt>
-              <dd className="m-0 text-[13px] font-normal opacity-80">{booking.notes}</dd>
-            </div>
           </dl>
         </div>
 

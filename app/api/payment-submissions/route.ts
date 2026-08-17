@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { parseDateStringLocal, timeSlotToHour24 } from "@/lib/booking";
 import { isValidPaymentChannel, isValidReferenceSource, type PaymentSubmissionQueueItem } from "@/lib/payments";
-import { formatHour12, formatPrimeDate } from "@/lib/prime-sports";
+import { formatCurrency, formatHour12, formatPrimeDate } from "@/lib/prime-sports";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { verifySlotHoldOwnership } from "@/lib/supabase/slot-holds";
+import { sendBookingSubmittedNotification } from "@/lib/supabase/notifications";
 import { getStaffContext } from "@/lib/supabase/staff-auth";
 
 export const dynamic = "force-dynamic";
@@ -99,6 +100,13 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceRoleClient();
   const created: { id: string; bookingId: string; status: string }[] = [];
+  // Accumulated across the loop below to fire one "booking submitted" email
+  // for the whole batch once every submission has been created — see
+  // sendBookingSubmittedNotification() after the loop. `customerContact`
+  // only needs to be captured once since every booking in one checkout
+  // submission belongs to the same guest/session.
+  const submittedSlots: { courtName: string; bookingDateLabel: string; timeSlotLabel: string; pricePhpLabel: string }[] = [];
+  let customerContact: { name: string; email: string | null } | null = null;
 
   // Processed sequentially rather than as one atomic transaction — a single
   // checkout can cover several bookings (booking-client.tsx allows picking
@@ -111,7 +119,7 @@ export async function POST(request: NextRequest) {
   for (const bookingId of bookingIds as string[]) {
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select("id, court_id, booking_date, time_slot, status, price_php")
+      .select("id, court_id, booking_date, time_slot, status, price_php, courts(name), customers(full_name, email)")
       .eq("id", bookingId)
       .maybeSingle();
 
@@ -216,7 +224,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const bookingJoins = booking as unknown as {
+      courts: { name: string } | null;
+      customers: { full_name: string; email: string } | null;
+    };
+
+    submittedSlots.push({
+      courtName: bookingJoins.courts?.name ?? "your court",
+      bookingDateLabel: formatPrimeDate(parseDateStringLocal(booking.booking_date)),
+      timeSlotLabel: formatHour12(timeSlotToHour24(booking.time_slot)),
+      pricePhpLabel: formatCurrency(Number(booking.price_php ?? 0)),
+    });
+
+    if (!customerContact && bookingJoins.customers) {
+      customerContact = { name: bookingJoins.customers.full_name, email: bookingJoins.customers.email };
+    }
+
     created.push({ id: submission.id, bookingId: submission.booking_id, status: submission.status });
+  }
+
+  // Best-effort side effect, same non-blocking contract as every other
+  // fire-and-forget notification in this app (see sendBookingConfirmationNotifications
+  // in approve/route.ts) — a failed/unconfigured email must never fail this
+  // request, and the submission is already fully saved above regardless.
+  // Distinct from that later "booking confirmed" email: this one fires now,
+  // right after the guest submits proof of payment, not once staff approve it.
+  if (customerContact) {
+    void sendBookingSubmittedNotification({
+      bookingIds: created.map((item) => item.bookingId),
+      customerName: customerContact.name,
+      email: customerContact.email,
+      referenceNo: referenceNo.trim(),
+      slots: submittedSlots,
+    });
   }
 
   return NextResponse.json({ submissions: created }, { status: 201 });

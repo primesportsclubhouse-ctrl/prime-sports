@@ -39,6 +39,20 @@ export type BookingConfirmationEmailInput = {
   rosterCheckinUrl: string | null;
 };
 
+export type BookingSubmittedSlot = {
+  courtName: string;
+  bookingDateLabel: string;
+  timeSlotLabel: string;
+  pricePhpLabel: string;
+};
+
+export type BookingSubmittedEmailInput = {
+  to: string;
+  customerName: string;
+  referenceNo: string;
+  slots: BookingSubmittedSlot[];
+};
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -72,35 +86,52 @@ function buildBookingConfirmationHtml(input: BookingConfirmationEmailInput): str
           : ""
       }
       <p>See you on the court!</p>
-      <p style="color: #777; font-size: 13px;">— Prime Sports</p>
+      <p style="color: #777; font-size: 13px;">— PrimeSports Clubhouse</p>
     </div>
   `.trim();
 }
 
-/**
- * Sends a booking-confirmation email via Resend's REST API. Never throws —
- * every failure mode (missing API key, network error, non-2xx response)
- * resolves to a tagged result instead, so callers (see
- * lib/supabase/notifications.ts) can log the outcome without wrapping this
- * in their own try/catch.
- *
- * Honest degradation: with no RESEND_API_KEY set, this returns
- * `{ outcome: "skipped", reason }` — never a fake `{ outcome: "sent" }`.
- */
-export async function sendBookingConfirmationEmail(
-  input: BookingConfirmationEmailInput,
-): Promise<SendEmailResult> {
+function buildBookingSubmittedHtml(input: BookingSubmittedEmailInput): string {
+  const rows = input.slots
+    .map(
+      (slot) => `
+          <tr>
+            <td style="padding: 4px 0; color: #555;">${escapeHtml(slot.courtName)}</td>
+            <td style="padding: 4px 0; color: #555;">${escapeHtml(slot.bookingDateLabel)} · ${escapeHtml(slot.timeSlotLabel)}</td>
+            <td style="padding: 4px 0; font-weight: 600; text-align: right;">${escapeHtml(slot.pricePhpLabel)}</td>
+          </tr>`,
+    )
+    .join("");
+
+  return `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="font-size: 20px; margin-bottom: 8px;">We've received your booking</h1>
+      <p>Hi ${escapeHtml(input.customerName)},</p>
+      <p>Thanks for booking with PrimeSports Clubhouse! We've received your payment reference and your slot${input.slots.length > 1 ? "s are" : " is"} being held while our staff verify it. You'll get a separate email once it's confirmed.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tbody>${rows}</tbody>
+      </table>
+      <p style="color: #777; font-size: 13px;">Payment reference: ${escapeHtml(input.referenceNo)}</p>
+      <p>We'll be in touch shortly — thanks for your patience!</p>
+      <p style="color: #777; font-size: 13px;">— PrimeSports Clubhouse</p>
+    </div>
+  `.trim();
+}
+
+/** Shared low-level Resend call — both sendBookingConfirmationEmail (below)
+ *  and sendBookingSubmittedEmail funnel through this so the honest-
+ *  degradation / error-shape contract only needs to be gotten right once. */
+async function sendViaResend(to: string, subject: string, html: string): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
     return {
       outcome: "skipped",
-      reason: `Email is not configured — set ${ENV_VAR_NAME} to send booking confirmation emails (see .env.local.example).`,
+      reason: `Email is not configured — set ${ENV_VAR_NAME} to send this notification (see .env.local.example).`,
     };
   }
 
   const from = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
-  const subject = `Booking confirmed — ${input.courtName}, ${input.bookingDateLabel}`;
 
   try {
     const response = await fetch(RESEND_ENDPOINT, {
@@ -109,12 +140,7 @@ export async function sendBookingConfirmationEmail(
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from,
-        to: [input.to],
-        subject,
-        html: buildBookingConfirmationHtml(input),
-      }),
+      body: JSON.stringify({ from, to: [to], subject, html }),
     });
 
     const json = (await response.json().catch(() => null)) as
@@ -135,4 +161,39 @@ export async function sendBookingConfirmationEmail(
       reason: error instanceof Error ? error.message : "Resend request failed.",
     };
   }
+}
+
+/**
+ * Sends a booking-confirmation email via Resend's REST API. Never throws —
+ * every failure mode (missing API key, network error, non-2xx response)
+ * resolves to a tagged result instead, so callers (see
+ * lib/supabase/notifications.ts) can log the outcome without wrapping this
+ * in their own try/catch.
+ *
+ * Honest degradation: with no RESEND_API_KEY set, this returns
+ * `{ outcome: "skipped", reason }` — never a fake `{ outcome: "sent" }`.
+ */
+export async function sendBookingConfirmationEmail(
+  input: BookingConfirmationEmailInput,
+): Promise<SendEmailResult> {
+  const subject = `Booking confirmed — ${input.courtName}, ${input.bookingDateLabel}`;
+  return sendViaResend(input.to, subject, buildBookingConfirmationHtml(input));
+}
+
+/**
+ * Sends the "we've received your booking — pending verification" email —
+ * fired right after a guest submits a payment reference for one or more
+ * held slots (see POST /api/payment-submissions), distinct from
+ * sendBookingConfirmationEmail above (which fires later, only once staff
+ * actually approve the submission). Same never-throws / honest-degradation
+ * contract as sendBookingConfirmationEmail.
+ */
+export async function sendBookingSubmittedEmail(
+  input: BookingSubmittedEmailInput,
+): Promise<SendEmailResult> {
+  const subject =
+    input.slots.length === 1
+      ? `Booking received — ${input.slots[0].courtName}, pending verification`
+      : `Booking received — ${input.slots.length} slots, pending verification`;
+  return sendViaResend(input.to, subject, buildBookingSubmittedHtml(input));
 }

@@ -14,11 +14,16 @@ Requires `GOOGLE_CLOUD_VISION_API_KEY` **and** an active billing account on the 
 
 Unconfigured/failed behavior: `501 {ocrAvailable: false}` if no key; `502 {ocrAvailable: true, error}` if the call itself fails. Checkout's manual reference-entry field is untouched either way.
 
-## Resend — booking confirmation email
+## Resend — booking emails
 
 **Status: configured and verified live**, sending from a verified domain (`bookings@primesportsclubhouse.com`), not Resend's shared sandbox sender.
 
-Fired from `app/api/payment-submissions/[id]/approve/route.ts` after a booking is confirmed, via `lib/supabase/notifications.ts` → `lib/email.ts`. The email includes a "Check in your group" link to the customer's booking-scoped roster check-in page (see the roster feature in [database-schema.md](database-schema.md) and [booking-and-checkin-guide.md](../guides/booking-and-checkin-guide.md)).
+Two genuinely distinct emails, fired at two different points in the flow:
+
+- **"Booking received" (`booking_submitted`)** — fired from `app/api/payment-submissions/route.ts` right after a guest submits a payment reference for one or more held slots, via `lib/supabase/notifications.ts`'s `sendBookingSubmittedNotification()` → `lib/email.ts`'s `sendBookingSubmittedEmail()`. One combined email per submission (a checkout can cover several slots at once), listing every slot and the reference number. No roster check-in link yet — the booking isn't confirmed.
+- **"Booking confirmed" (`booking_confirmed`)** — fired from `app/api/payment-submissions/[id]/approve/route.ts` once staff actually approve the submission, via `sendBookingConfirmationNotifications()` → `sendBookingConfirmationEmail()`. Includes the "Check in your group" link to the customer's booking-scoped roster check-in page (see the roster feature in [database-schema.md](database-schema.md) and [booking-and-checkin-guide.md](../guides/booking-and-checkin-guide.md)).
+
+Both log every attempt (sent/failed/skipped) to `notification_log`, distinguished by `event`.
 
 Requires `RESEND_API_KEY`; `RESEND_FROM_EMAIL` must point at a domain verified in the Resend dashboard, or mail only reaches the account owner's own address (Resend's sandbox restriction).
 

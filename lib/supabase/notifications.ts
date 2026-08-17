@@ -10,7 +10,7 @@
 // every attempt should honestly log as "skipped" rather than silently doing
 // nothing.
 
-import { sendBookingConfirmationEmail } from "@/lib/email";
+import { sendBookingConfirmationEmail, sendBookingSubmittedEmail, type BookingSubmittedSlot } from "@/lib/email";
 import { sendBookingConfirmationSms } from "@/lib/sms";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
@@ -179,6 +179,89 @@ export async function sendBookingConfirmationNotifications(
   } catch (error) {
     console.error(
       `[notifications] unexpected error sending confirmations for booking ${input.bookingId}:`,
+      error instanceof Error ? error.message : error,
+    );
+  }
+}
+
+export type BookingSubmittedNotificationInput = {
+  /** One or more bookings covered by a single payment submission — checkout
+   *  lets a guest pick several slots before submitting one reference number
+   *  for all of them (see POST /api/payment-submissions), so this sends one
+   *  combined email rather than one per slot. Each booking still gets its
+   *  own notification_log row (that table is keyed per-booking), all
+   *  sharing the same send outcome since they went out as a single email. */
+  bookingIds: string[];
+  customerName: string;
+  email: string | null;
+  referenceNo: string;
+  slots: BookingSubmittedSlot[];
+};
+
+/**
+ * Sends (or honestly records skipping) the "we've received your booking —
+ * pending verification" email right after a guest submits a payment
+ * reference. Email-only (no SMS) — distinct from
+ * sendBookingConfirmationNotifications above, which fires later once staff
+ * actually approve the submission. Same never-throws, always-resolves
+ * contract: a missing email on file, an unconfigured provider, or a
+ * notification_log insert failure are all caught and logged, never thrown.
+ */
+export async function sendBookingSubmittedNotification(
+  input: BookingSubmittedNotificationInput,
+): Promise<void> {
+  try {
+    const supabase = createServiceRoleClient();
+    const event = "booking_submitted";
+
+    if (!input.email) {
+      console.warn(
+        `[notifications] payment submission for booking(s) ${input.bookingIds.join(", ")} has no customer email on file — skipping "booking submitted" email.`,
+      );
+      await Promise.all(
+        input.bookingIds.map((bookingId) =>
+          logNotificationAttempt(supabase, {
+            bookingId,
+            channel: "email",
+            event,
+            recipient: null,
+            status: "skipped",
+            errorMessage: "Customer has no email on file.",
+          }),
+        ),
+      );
+      return;
+    }
+
+    const result = await sendBookingSubmittedEmail({
+      to: input.email,
+      customerName: input.customerName,
+      referenceNo: input.referenceNo,
+      slots: input.slots,
+    });
+
+    if (result.outcome === "skipped") {
+      console.warn(`[notifications] "booking submitted" email skipped for ${input.bookingIds.join(", ")}: ${result.reason}`);
+    } else if (result.outcome === "failed") {
+      console.error(`[notifications] "booking submitted" email failed for ${input.bookingIds.join(", ")}: ${result.reason}`);
+    }
+
+    await Promise.all(
+      input.bookingIds.map((bookingId) =>
+        logNotificationAttempt(supabase, {
+          bookingId,
+          channel: "email",
+          event,
+          recipient: input.email,
+          status: result.outcome,
+          providerMessageId: result.outcome === "sent" ? result.providerMessageId : null,
+          errorMessage: result.outcome === "sent" ? null : result.reason,
+        }),
+      ),
+    );
+  } catch (error) {
+    console.error(
+      `[notifications] unexpected error sending "booking submitted" email for ${input.bookingIds.join(", ")}:`,
       error instanceof Error ? error.message : error,
     );
   }
