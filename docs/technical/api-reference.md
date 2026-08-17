@@ -35,6 +35,7 @@ Auth modes used below:
 | `/api/payment-channels/[key]/qr-image` | DELETE | Staff (manager/admin) | Clears a channel's QR image, reverting checkout to the placeholder render. |
 | `/api/payment-submissions` | POST | Guest (token) | Submits a payment claim (reference number, amount, channel, receipt path) tied to a booking. |
 | `/api/payment-submissions` | GET | Staff | Lists submissions (filterable by `status`) for the verification queue, with signed receipt image URLs. |
+| `/api/payment-submissions/pending-count` | GET | Staff | Cheap `{ count }` of `pending` submissions — backs the sidebar's Verification Queue badge (`admin-sidebar.tsx`). Deliberately separate from the route above: no join, no signed-URL generation, since the sidebar renders on every admin page. |
 | `/api/payment-submissions/[id]/approve` | POST | Staff | Sets submission `approved` **and** booking `confirmed`. Fires audit log + customer notifications (email/SMS) as best-effort side effects. |
 | `/api/payment-submissions/[id]/reject` | POST | Staff | Sets submission `rejected` **and** booking `cancelled`, frees the slot hold. A genuinely separate code path from approve — not a shared handler with a different label. |
 | `/api/uploads/receipt` | POST | Guest (token) | Uploads a receipt image to the private `receipts` Storage bucket, namespaced under `${sessionToken}/...`. |

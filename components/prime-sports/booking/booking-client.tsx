@@ -377,6 +377,27 @@ export default function BookingClient() {
     const existing = selections.find((s) => sameItem(s, candidate));
 
     if (existing) {
+      // Optimistically clear this slot's live status locally too — this
+      // browser is the one that held it, and the bookings table's unique
+      // composite index guarantees nobody else could have been holding the
+      // exact same slot at the same time, so it's safe to show "open"
+      // immediately instead of waiting for the realtime-triggered refetch
+      // (subscription debounce + round-trip) to catch up with the cancel.
+      // Without this, `selected` flips false right away but the stale
+      // `availabilityByHour` entry still reads "held", so the button
+      // flashes disabled/"Held" for a few hundred ms to a couple of
+      // seconds before the next fetch corrects it.
+      const hour24 = operatingHours[timeIndex];
+      setAvailabilityByHour((prev) => {
+        const perCourt = prev.get(hour24);
+        if (!perCourt || perCourt[courtIndex] === undefined) {
+          return prev;
+        }
+        const next = new Map(prev);
+        next.set(hour24, { ...perCourt, [courtIndex]: "open" });
+        return next;
+      });
+
       await removeBooking(existing);
       return;
     }

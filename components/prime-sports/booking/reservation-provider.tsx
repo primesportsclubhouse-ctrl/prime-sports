@@ -233,6 +233,21 @@ export function ReservationProvider({ children }: { children: ReactNode }) {
 
       const hour24 = operatingHours[item.timeIndex];
 
+      // Optimistic: reflect the selection (checkmark, "Selected" styling)
+      // the instant the user clicks, before create_booking_draft()'s
+      // round-trip settles — booking-client.tsx already pre-checks
+      // availabilityByHour and disables taken slots before this is even
+      // called, so a genuine conflict here is rare; when it does happen
+      // (someone else's request lands first), this optimistic entry is
+      // rolled back below and the real error is surfaced.
+      const optimisticItem: BookingLineItem = {
+        date: item.date,
+        sport: item.sport,
+        courtIndex: item.courtIndex,
+        timeIndex: item.timeIndex,
+      };
+      setBookings((prev) => [...prev, optimisticItem]);
+
       try {
         const response = await fetch("/api/bookings", {
           method: "POST",
@@ -250,24 +265,24 @@ export function ReservationProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
 
         if (!response.ok) {
+          setBookings((prev) => prev.filter((existing) => !sameSlot(existing, optimisticItem)));
           return { ok: false, error: data?.error ?? "Could not reserve that slot." };
         }
 
-        setBookings((prev) => [
-          ...prev,
-          {
-            date: item.date,
-            sport: item.sport,
-            courtIndex: item.courtIndex,
-            timeIndex: item.timeIndex,
-            id: data.booking.id,
-            status: data.booking.status,
-            pricePhp: data.booking.pricePhp,
-          },
-        ]);
+        // Patch in the real server-assigned fields now that the round-trip
+        // settled — matched by slot, not by id (the optimistic entry never
+        // had one).
+        setBookings((prev) =>
+          prev.map((existing) =>
+            sameSlot(existing, optimisticItem)
+              ? { ...existing, id: data.booking.id, status: data.booking.status, pricePhp: data.booking.pricePhp }
+              : existing,
+          ),
+        );
 
         return { ok: true };
       } catch {
+        setBookings((prev) => prev.filter((existing) => !sameSlot(existing, optimisticItem)));
         return { ok: false, error: "Network error — could not reserve that slot." };
       }
     },

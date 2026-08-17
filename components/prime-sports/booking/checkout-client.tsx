@@ -63,6 +63,8 @@ export default function CheckoutClient() {
   const [activeChannelIndex, setActiveChannelIndex] = useState(0);
   const [upload, setUpload] = useState<UploadState | null>(null);
   const [receiptPath, setReceiptPath] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [reference, setReference] = useState("");
   const [referenceSource, setReferenceSource] = useState<ReferenceSource>("manual");
@@ -135,6 +137,32 @@ export default function CheckoutClient() {
     };
   }, []);
 
+  // Revokes the previous object URL whenever it's replaced by a new upload,
+  // and the final one on unmount — `URL.createObjectURL` blobs otherwise
+  // leak for the page's lifetime since nothing else ever releases them.
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  useEffect(() => {
+    if (!isPreviewExpanded) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsPreviewExpanded(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPreviewExpanded]);
+
   /**
    * Calls the real /api/ocr/receipt (Google Cloud Vision TEXT_DETECTION) —
    * fire-and-forget from handleFile once a receipt has actually landed in
@@ -186,6 +214,11 @@ export default function CheckoutClient() {
     setReceiptPath(null);
     setUploadError(null);
     setIsUploading(true);
+    // Shows immediately from the local file, independent of the upload
+    // round-trip — the customer gets visual confirmation of what they
+    // picked even before (or if) the server upload finishes. The matching
+    // revoke lives in the effect below, keyed off `previewUrl` itself.
+    setPreviewUrl(URL.createObjectURL(file));
 
     try {
       const formData = new FormData();
@@ -207,6 +240,30 @@ export default function CheckoutClient() {
     } catch {
       setUploadError("Network error — could not upload that receipt.");
       setIsUploading(false);
+    }
+  }
+
+  /** Clears the current upload so the dropzone reappears — the only way
+   *  back to it once a receipt is showing, per how this panel is meant to
+   *  read: one receipt at a time, swapped explicitly rather than silently
+   *  replaced by dropping a new file on top of an existing one. Only clears
+   *  the reference field if OCR filled it (that value came from the receipt
+   *  being removed); a manually-typed reference is independent info and stays. */
+  function handleRemoveReceipt() {
+    setUpload(null);
+    setReceiptPath(null);
+    setPreviewUrl(null);
+    setUploadError(null);
+    setIsUploading(false);
+    setIsDetectingReference(false);
+
+    if (referenceSource === "ocr") {
+      setReference("");
+      setReferenceSource("manual");
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   }
 
@@ -467,51 +524,88 @@ export default function CheckoutClient() {
                 <p className="mt-1.5 text-sm opacity-65">Drop your payment screenshot and confirm the extracted reference.</p>
               </div>
             </div>
-            <button
-              type="button"
-              className={`w-full rounded-[var(--radius)] border-2 border-dashed px-6 py-10 text-center text-foreground transition ${isDragging ? "border-accent-secondary bg-[rgba(212,163,89,0.12)]" : "border-border bg-surface-muted hover:border-accent-secondary hover:bg-[rgba(212,163,89,0.08)]"}`}
-              id="dropzone"
-              onClick={() => fileInputRef.current?.click()}
-              onDragEnter={(event) => {
-                event.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={(event) => {
-                event.preventDefault();
-                setIsDragging(false);
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                setIsDragging(false);
-                void handleFile(event.dataTransfer.files[0]);
-              }}
-            >
-              <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full border border-border bg-surface text-[22px] text-accent" aria-hidden="true">
-                +
-              </div>
-              <h3 className="mb-1 [font-family:var(--font-heading)] text-lg font-extrabold uppercase tracking-[0.05em]">Drop receipt here</h3>
-              <p className="text-[13px] opacity-65">or click to browse · PNG, JPG up to 10MB</p>
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              hidden
-              accept="image/*"
-              onChange={(event) => void handleFile(event.target.files?.[0])}
-            />
+            {!upload ? (
+              <>
+                <button
+                  type="button"
+                  className={`w-full rounded-[var(--radius)] border-2 border-dashed px-6 py-10 text-center text-foreground transition ${isDragging ? "border-accent-secondary bg-[rgba(212,163,89,0.12)]" : "border-border bg-surface-muted hover:border-accent-secondary hover:bg-[rgba(212,163,89,0.08)]"}`}
+                  id="dropzone"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={(event) => {
+                    event.preventDefault();
+                    setIsDragging(false);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setIsDragging(false);
+                    void handleFile(event.dataTransfer.files[0]);
+                  }}
+                >
+                  <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full border border-border bg-surface text-[22px] text-accent" aria-hidden="true">
+                    +
+                  </div>
+                  <h3 className="mb-1 [font-family:var(--font-heading)] text-lg font-extrabold uppercase tracking-[0.05em]">Drop receipt here</h3>
+                  <p className="text-[13px] opacity-65">or click to browse · PNG, JPG up to 10MB</p>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={(event) => void handleFile(event.target.files?.[0])}
+                />
+              </>
+            ) : (
+              // The dropzone re-mounts fresh once the receipt is removed, so the
+              // native file input still needs to exist somewhere in the DOM for
+              // handleRemoveReceipt() to clear via the ref — kept here, hidden,
+              // rather than duplicated in both branches.
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={(event) => void handleFile(event.target.files?.[0])}
+              />
+            )}
 
             {upload ? (
               <div className="mt-4" id="uploadStatus">
                 <div className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-3 text-foreground">
-                  <div className="size-16 shrink-0 rounded-[var(--radius)] border border-border bg-[repeating-linear-gradient(45deg,var(--muted)_0_8px,var(--surface)_8px_16px)]" aria-hidden="true" />
+                  {previewUrl ? (
+                    <button
+                      type="button"
+                      className="size-16 shrink-0 overflow-hidden rounded-[var(--radius)] border border-border transition hover:border-accent-secondary"
+                      aria-label="View full receipt preview"
+                      onClick={() => setIsPreviewExpanded(true)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- local blob: URL, not an app asset next/image can optimize */}
+                      <img src={previewUrl} alt="Uploaded receipt preview" className="h-full w-full object-cover" />
+                    </button>
+                  ) : (
+                    <div className="size-16 shrink-0 rounded-[var(--radius)] border border-border bg-[repeating-linear-gradient(45deg,var(--muted)_0_8px,var(--surface)_8px_16px)]" aria-hidden="true" />
+                  )}
                   <div className="flex-1">
                     <div className="text-[13px] font-semibold">{upload.name}</div>
                     <div className="text-[11px] opacity-60">{upload.meta}</div>
                   </div>
+                  <button
+                    type="button"
+                    className="shrink-0 self-start px-1.5 py-1 text-lg leading-none text-foreground/40 transition hover:text-accent"
+                    aria-label="Remove uploaded receipt"
+                    disabled={isSubmitted}
+                    onClick={handleRemoveReceipt}
+                  >
+                    ×
+                  </button>
                 </div>
                 <div
                   className={`mt-3 flex items-center gap-3 rounded-[var(--radius)] border px-4 py-3.5 text-[13px] ${receiptPath ? "border-success bg-[rgba(34,197,94,0.12)] text-foreground shadow-[0_0_0_1px_rgba(34,197,94,0.22),0_0_26px_rgba(34,197,94,0.12)]" : uploadError ? "border-accent bg-[rgba(200,55,45,0.1)] text-foreground" : "border-border bg-canvas text-foreground"}`}
@@ -585,6 +679,34 @@ export default function CheckoutClient() {
           </div>
         </div>
       </section>
+
+      {isPreviewExpanded && previewUrl ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Uploaded receipt preview"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setIsPreviewExpanded(false)}
+        >
+          <div className="relative max-h-[85vh] max-w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element -- local blob: URL, not an app asset next/image can optimize */}
+            <img
+              src={previewUrl}
+              alt="Uploaded receipt, full size"
+              className="max-h-[85vh] max-w-full rounded-[var(--radius)] border border-border object-contain shadow-[var(--shadow-lg)]"
+              onClick={(event) => event.stopPropagation()}
+            />
+            <button
+              type="button"
+              aria-label="Close preview"
+              className="absolute -right-3 -top-3 flex size-8 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-[var(--shadow-sm)] transition hover:border-accent-secondary"
+              onClick={() => setIsPreviewExpanded(false)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

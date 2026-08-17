@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { primeToolbarIconButtonClass } from "@/lib/prime-sports";
+import { useRealtimeRefresh } from "@/lib/supabase/realtime";
 
 import adminLogo from "@/public/prime-sports/header-logo.png";
 
@@ -20,8 +21,8 @@ export type AdminRoute =
 const adminNavLinks: { href: AdminRoute; label: string; icon: typeof CalendarDays }[] = [
   { href: "/admin/dashboard", label: "Master Calendar", icon: CalendarDays },
   { href: "/admin/availability", label: "Availability", icon: SlidersHorizontal },
-  { href: "/admin/rates", label: "Rate Cards", icon: PhilippinePeso },
   { href: "/admin/queue", label: "Verification Queue", icon: ClipboardList },
+  { href: "/admin/rates", label: "Rate Cards", icon: PhilippinePeso },
   { href: "/admin/roster", label: "Roster", icon: Users },
   { href: "/admin/content", label: "Facility Content", icon: FileText },
 ];
@@ -65,6 +66,50 @@ type AdminSidebarProps = {
 export default function AdminSidebar({ currentPath }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isCollapsed = useSyncExternalStore(subscribeToCollapsePreference, getCollapsePreference, getServerCollapsePreference);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Best-effort badge count for the Verification Queue nav item — a failed
+  // fetch just leaves the last-known count showing rather than breaking
+  // sidebar navigation. Fetched on mount, then kept live by the realtime
+  // subscription below (same "await before setState" shape as
+  // master-calendar.tsx's fetch effect, required by react-hooks/set-state-in-effect).
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/payment-submissions/pending-count");
+        if (cancelled || !response.ok) {
+          return;
+        }
+        const body: { count?: number } = await response.json();
+        if (!cancelled) {
+          setPendingCount(typeof body.count === "number" ? body.count : 0);
+        }
+      } catch {
+        // Ignored — best-effort.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useRealtimeRefresh("admin-sidebar-pending-count", ["payment_submissions"], () => {
+    void (async () => {
+      try {
+        const response = await fetch("/api/payment-submissions/pending-count");
+        if (!response.ok) {
+          return;
+        }
+        const body: { count?: number } = await response.json();
+        setPendingCount(typeof body.count === "number" ? body.count : 0);
+      } catch {
+        // Ignored — best-effort.
+      }
+    })();
+  });
 
   useEffect(() => {
     if (!isOpen) {
@@ -127,6 +172,8 @@ export default function AdminSidebar({ currentPath }: AdminSidebarProps) {
           {adminNavLinks.map((link) => {
             const Icon = link.icon;
             const isActive = currentPath === link.href;
+            const badgeCount = link.href === "/admin/queue" ? pendingCount : 0;
+            const badgeLabel = badgeCount > 99 ? "99+" : String(badgeCount);
 
             return (
               <Link
@@ -134,7 +181,7 @@ export default function AdminSidebar({ currentPath }: AdminSidebarProps) {
                 href={link.href}
                 onClick={() => setIsOpen(false)}
                 aria-current={isActive ? "page" : undefined}
-                title={collapsed ? link.label : undefined}
+                title={collapsed ? `${link.label}${badgeCount > 0 ? ` (${badgeCount} pending)` : ""}` : undefined}
                 className={`flex items-center rounded-[var(--radius)] text-[13px] font-bold uppercase tracking-[0.04em] transition ${
                   collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5"
                 } ${
@@ -143,8 +190,33 @@ export default function AdminSidebar({ currentPath }: AdminSidebarProps) {
                     : "text-foreground/70 hover:bg-surface-muted hover:text-foreground"
                 }`}
               >
-                <Icon size={17} aria-hidden="true" />
-                {collapsed ? <span className="sr-only">{link.label}</span> : link.label}
+                <span className="relative inline-flex">
+                  <Icon size={17} aria-hidden="true" />
+                  {collapsed && badgeCount > 0 ? (
+                    <span
+                      className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-accent"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                </span>
+                {collapsed ? (
+                  <span className="sr-only">
+                    {link.label}
+                    {badgeCount > 0 ? ` (${badgeCount} pending)` : ""}
+                  </span>
+                ) : (
+                  <span className="flex flex-1 items-center justify-between gap-2">
+                    {link.label}
+                    {badgeCount > 0 ? (
+                      <span
+                        className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold tracking-normal text-canvas"
+                        aria-hidden="true"
+                      >
+                        {badgeLabel}
+                      </span>
+                    ) : null}
+                  </span>
+                )}
               </Link>
             );
           })}

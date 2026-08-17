@@ -15,7 +15,7 @@ An honest, current status ledger. This is the "what actually works" reference �
 - **Roster session/entry CRUD** — including the public, booker-facing self-check-in page and its confirmation-email link.
 - **Roster history** — status derived from real booking/check-in data, not stored redundantly.
 - **Server-side draft booking** — the 4-step flow survives a refresh.
-- **Real-time subscriptions** — live availability grid, live verification queue.
+- **Real-time subscriptions** — live availability grid, live verification queue, live pending-count badge on the admin sidebar's Verification Queue nav item.
 - **Booking-confirmation email** (Resend) — configured with a verified sending domain, verified with a real send.
 - **Admin audit log** — payment approve/reject, staff-initiated roster activate/end, and every content/rate/availability/QR edit below are all recorded.
 - **Slot-hold TTL sweep** — a proactive `pg_cron` job in addition to the existing lazy per-slot cleanup.

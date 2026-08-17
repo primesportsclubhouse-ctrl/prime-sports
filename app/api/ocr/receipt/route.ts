@@ -17,6 +17,12 @@ export const dynamic = "force-dynamic";
 const ENV_VAR_NAME = "GOOGLE_CLOUD_VISION_API_KEY";
 const VISION_ENDPOINT = "https://vision.googleapis.com/v1/images:annotate";
 const RECEIPTS_BUCKET = "receipts";
+// Node's built-in fetch has no default timeout — a stalled connection to
+// Vision (or a slow network path to it) would otherwise hang until the OS's
+// own TCP timeout, which is where a mysterious multi-second 502 like the one
+// this endpoint was seen returning actually comes from. Bounding it here
+// turns that into a fast, clearly-labeled failure instead of a long hang.
+const VISION_TIMEOUT_MS = 15_000;
 
 type OcrRequestPayload = {
   sessionToken?: unknown;
@@ -102,6 +108,7 @@ export async function POST(request: NextRequest) {
     .download(receiptPath);
 
   if (downloadError || !fileBlob) {
+    console.error(`[ocr/receipt] Storage download failed for "${receiptPath}":`, downloadError?.message);
     return NextResponse.json(
       { error: downloadError?.message ?? "Receipt image not found in storage." },
       { status: 404 },
@@ -111,6 +118,8 @@ export async function POST(request: NextRequest) {
   const base64Content = Buffer.from(await fileBlob.arrayBuffer()).toString("base64");
 
   let visionJson: VisionAnnotateResponse;
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), VISION_TIMEOUT_MS);
 
   try {
     const visionResponse = await fetch(`${VISION_ENDPOINT}?key=${apiKey}`, {
@@ -124,26 +133,32 @@ export async function POST(request: NextRequest) {
           },
         ],
       }),
+      signal: timeoutController.signal,
     });
 
     visionJson = (await visionResponse.json()) as VisionAnnotateResponse;
 
     if (!visionResponse.ok) {
       const message = visionJson.responses?.[0]?.error?.message ?? `Vision API responded with ${visionResponse.status}.`;
+      console.error(`[ocr/receipt] Vision API responded ${visionResponse.status}: ${message}`);
       return NextResponse.json({ ocrAvailable: true, error: message }, { status: 502 });
     }
   } catch (error) {
-    return NextResponse.json(
-      {
-        ocrAvailable: true,
-        error: error instanceof Error ? error.message : "Vision API request failed.",
-      },
-      { status: 502 },
-    );
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    const message = isTimeout
+      ? `Vision API request timed out after ${VISION_TIMEOUT_MS / 1000}s.`
+      : error instanceof Error
+        ? error.message
+        : "Vision API request failed.";
+    console.error(`[ocr/receipt] ${message}`, isTimeout ? "" : error);
+    return NextResponse.json({ ocrAvailable: true, error: message }, { status: 502 });
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const visionError = visionJson.responses?.[0]?.error?.message;
   if (visionError) {
+    console.error(`[ocr/receipt] Vision returned an error payload: ${visionError}`);
     return NextResponse.json({ ocrAvailable: true, error: visionError }, { status: 502 });
   }
 
