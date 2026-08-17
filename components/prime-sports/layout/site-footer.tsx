@@ -41,7 +41,7 @@ export default async function SiteFooter({
       <footer className="mt-10 border-t border-border py-8" data-od-id="site-footer">
         <div className={`${containerClassName} flex flex-wrap items-center justify-between gap-4 text-[13px] opacity-60`}>
           <p>© 2026 PrimeSports Clubhouse. All rights reserved.</p>
-          <p>Highway, Minglanilla, Cebu · {contactLabel}</p>
+          <p>Highway, Minglanilla, Cebu, 6064 · {contactLabel}</p>
         </div>
       </footer>
     );
@@ -90,11 +90,6 @@ export default async function SiteFooter({
               </li>
               <li>
                 <Link href="#" className="text-[13px] opacity-70 transition hover:opacity-100">
-                  Membership
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-[13px] opacity-70 transition hover:opacity-100">
                   Contact
                 </Link>
               </li>
@@ -103,7 +98,7 @@ export default async function SiteFooter({
         </div>
         <div className="flex flex-wrap justify-between gap-3 border-t border-border pt-6 text-xs opacity-50">
           <p>© 2026 PrimeSports Clubhouse. All rights reserved.</p>
-          <p>Highway, Minglanilla, Cebu · {contactLabel}</p>
+          <p>Highway, Minglanilla, Cebu, 6064 · {contactLabel}</p>
         </div>
       </div>
     </footer>
