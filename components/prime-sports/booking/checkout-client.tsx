@@ -579,33 +579,39 @@ export default function CheckoutClient() {
 
             {upload ? (
               <div className="mt-4" id="uploadStatus">
-                <div className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-3 text-foreground">
+                <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface text-foreground">
                   {previewUrl ? (
                     <button
                       type="button"
-                      className="size-16 shrink-0 overflow-hidden rounded-[var(--radius)] border border-border transition hover:border-accent-secondary"
+                      className="block w-full bg-canvas transition hover:opacity-90"
                       aria-label="View full receipt preview"
                       onClick={() => setIsPreviewExpanded(true)}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element -- local blob: URL, not an app asset next/image can optimize */}
-                      <img src={previewUrl} alt="Uploaded receipt preview" className="h-full w-full object-cover" />
+                      <img
+                        src={previewUrl}
+                        alt="Uploaded receipt preview"
+                        className="mx-auto max-h-[420px] min-h-[160px] w-full object-contain"
+                      />
                     </button>
                   ) : (
-                    <div className="size-16 shrink-0 rounded-[var(--radius)] border border-border bg-[repeating-linear-gradient(45deg,var(--muted)_0_8px,var(--surface)_8px_16px)]" aria-hidden="true" />
+                    <div className="h-40 w-full bg-[repeating-linear-gradient(45deg,var(--muted)_0_8px,var(--surface)_8px_16px)]" aria-hidden="true" />
                   )}
-                  <div className="flex-1">
-                    <div className="text-[13px] font-semibold">{upload.name}</div>
-                    <div className="text-[11px] opacity-60">{upload.meta}</div>
+                  <div className="flex items-center gap-3 border-t border-border p-3">
+                    <div className="flex-1">
+                      <div className="text-[13px] font-semibold">{upload.name}</div>
+                      <div className="text-[11px] opacity-60">{upload.meta}</div>
+                    </div>
+                    <button
+                      type="button"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-border text-base leading-none text-foreground transition hover:border-accent hover:bg-accent hover:text-canvas disabled:pointer-events-none disabled:opacity-40"
+                      aria-label="Remove uploaded receipt"
+                      disabled={isSubmitted}
+                      onClick={handleRemoveReceipt}
+                    >
+                      ×
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="shrink-0 self-start px-1.5 py-1 text-lg leading-none text-foreground/40 transition hover:text-accent"
-                    aria-label="Remove uploaded receipt"
-                    disabled={isSubmitted}
-                    onClick={handleRemoveReceipt}
-                  >
-                    ×
-                  </button>
                 </div>
                 <div
                   className={`mt-3 flex items-center gap-3 rounded-[var(--radius)] border px-4 py-3.5 text-[13px] ${receiptPath ? "border-success bg-[rgba(34,197,94,0.12)] text-foreground shadow-[0_0_0_1px_rgba(34,197,94,0.22),0_0_26px_rgba(34,197,94,0.12)]" : uploadError ? "border-accent bg-[rgba(200,55,45,0.1)] text-foreground" : "border-border bg-canvas text-foreground"}`}

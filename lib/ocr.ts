@@ -1,6 +1,6 @@
-// Pure text-extraction heuristic for pulling a Prime Sports reference number
-// out of Google Cloud Vision's TEXT_DETECTION output. No Supabase/Vision
-// network calls live here — see app/api/ocr/receipt/route.ts for the actual
+// Pure text-extraction heuristic for pulling a payment reference number out
+// of Google Cloud Vision's TEXT_DETECTION output. No Supabase/Vision network
+// calls live here — see app/api/ocr/receipt/route.ts for the actual
 // request/response plumbing — this file stays pure (deterministic, no I/O)
 // so the extraction logic can be reasoned about in isolation, mirroring the
 // lib/booking.ts / lib/payments.ts split already established for this app.
@@ -8,59 +8,99 @@
 export type OcrExtractionResult = {
   reference: string | null;
   /**
-   * true only when exactly one distinct PRS-XXXXXX-shaped token was found in
-   * the detected text — the frontend only auto-fills the reference field
-   * when this is true; an unconfident/ambiguous result is treated the same
-   * as "nothing found" and manual entry stays untouched.
+   * true only when exactly one distinct candidate was found in the detected
+   * text — the frontend only auto-fills the reference field when this is
+   * true; an unconfident/ambiguous result is treated the same as "nothing
+   * found" and manual entry stays untouched.
    */
   confident: boolean;
 };
 
 /**
- * Heuristic, documented since receipt formats vary wildly:
- *
- * Prime Sports references are always shaped "PRS-" followed by 6
- * alphanumeric characters (see the `PRS-XXXXXX` placeholder on the
- * Transaction Reference field in checkout-client.tsx). This pattern is
- * deliberately narrow rather than an attempt to parse every payment app's
- * own transaction-ID format — GCash's "Ref No.", Maya's transaction IDs, and
- * bank transfer memo lines all use different, provider-specific shapes that
- * would each need their own bespoke heuristic (and real sample receipts to
- * validate against, which weren't available for this slice). Matching only
- * the club's own reference format keeps false-positive risk low: we would
- * rather leave the field blank for manual entry than confidently pre-fill
- * the wrong number.
+ * Prime Sports' own internal booking-reference shape ("PRS-" + 6
+ * alphanumeric characters). Checked first since it's a fixed, distinctive
+ * pattern with near-zero false-positive risk — but note real GCash/Maya/bank
+ * receipts never contain this text (nothing in the booking flow asks a
+ * customer to write it as their payment memo), so in practice this branch
+ * essentially never matches a genuine customer-uploaded receipt. It's kept
+ * for the one legitimate case where it would: a customer typed it into a
+ * bank transfer's memo field on their own.
  *
  * Tolerates common OCR noise between "PRS" and the code — Vision's line
  * breaking / kerning frequently drops, duplicates, or substitutes the
  * separator character, so a run of whitespace, a hyphen, or nothing at all
  * are all accepted (`PRS-1A2B3C`, `PRS 1A2B3C`, `PRS1A2B3C`).
  */
-const REFERENCE_PATTERN = /PRS[\s-]?([A-Z0-9]{6})\b/gi;
+const PRS_REFERENCE_PATTERN = /PRS[\s-]?([A-Z0-9]{6})\b/gi;
+
+/**
+ * What a real payment receipt actually shows: the payment app's own
+ * transaction reference, introduced by a label — GCash/Maya's "Ref No.",
+ * bank apps' "Trace No.", "Transaction ID", etc. — followed by a run of
+ * digits (often grouped with spaces or dashes for readability, e.g.
+ * "1234 5678 9012"). Deliberately numeric-only (rather than matching any
+ * alphanumeric token after the label): these providers' reference numbers
+ * are numeric in practice, and staying numeric-only avoids false-positive
+ * matches on stray words near a label (e.g. "Refund" elsewhere on the
+ * image) that a looser alphanumeric match would risk. As documented before,
+ * this is a heuristic without real sample receipts to validate every
+ * provider's exact layout against — kept deliberately conservative since an
+ * incorrect auto-fill the customer doesn't notice is worse than none.
+ */
+const LABELED_REFERENCE_PATTERN =
+  /\b(?:ref(?:erence)?\.?\s*(?:no\.?|number|#)|trace\s*(?:no\.?|number)|txn\.?\s*(?:id|no\.?)|transaction\s*(?:id|no\.?|number))\s*[:.\-]?\s*(\d[\d\s-]{5,22}\d)/gi;
+
+function normalizeDigitToken(raw: string) {
+  return raw.replace(/[\s-]+/g, "");
+}
+
+/** Picks the single unambiguous match out of a set of candidates found by
+ *  one pattern — more than one distinct match is ambiguous (e.g. the image
+ *  also shows an unrelated earlier reference), so it's surfaced as a
+ *  low-confidence hint rather than something to auto-fill. */
+function resolveCandidates(candidates: Set<string>): OcrExtractionResult | null {
+  if (candidates.size === 0) {
+    return null;
+  }
+
+  const values = [...candidates];
+  if (values.length > 1) {
+    return { reference: values[0], confident: false };
+  }
+
+  return { reference: values[0], confident: true };
+}
 
 export function extractReferenceNumber(rawText: string): OcrExtractionResult {
   if (!rawText) {
     return { reference: null, confident: false };
   }
 
-  const matches = new Set<string>();
-  for (const match of rawText.matchAll(REFERENCE_PATTERN)) {
-    matches.add(`PRS-${match[1].toUpperCase()}`);
+  const prsMatches = new Set<string>();
+  for (const match of rawText.matchAll(PRS_REFERENCE_PATTERN)) {
+    prsMatches.add(`PRS-${match[1].toUpperCase()}`);
   }
 
-  if (matches.size === 0) {
-    return { reference: null, confident: false };
+  const prsResult = resolveCandidates(prsMatches);
+  if (prsResult) {
+    return prsResult;
   }
 
-  const candidates = [...matches];
-
-  if (candidates.length > 1) {
-    // Ambiguous — more than one distinct PRS-XXXXXX-shaped token was found
-    // (e.g. the image also shows an earlier booking's reference). Surface
-    // the first as a low-confidence hint, but don't ask the caller to
-    // auto-fill something we can't be sure is the right one.
-    return { reference: candidates[0], confident: false };
+  const labeledMatches = new Set<string>();
+  for (const match of rawText.matchAll(LABELED_REFERENCE_PATTERN)) {
+    const candidate = normalizeDigitToken(match[1]);
+    // 6–20 digits covers everything from a short bank trace number to a
+    // full 16-digit transaction ID; outside that range is more likely a
+    // mis-scoped match (a date, an amount) than a real reference.
+    if (candidate.length >= 6 && candidate.length <= 20) {
+      labeledMatches.add(candidate);
+    }
   }
 
-  return { reference: candidates[0], confident: true };
+  const labeledResult = resolveCandidates(labeledMatches);
+  if (labeledResult) {
+    return labeledResult;
+  }
+
+  return { reference: null, confident: false };
 }
