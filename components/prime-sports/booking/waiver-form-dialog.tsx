@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useToast } from "@/components/prime-sports/toast/toast-provider";
 import {
   primeButtonOutlineClass,
   primeButtonPrimaryClass,
@@ -25,6 +26,7 @@ type WaiverFormDialogProps = {
 };
 
 export default function WaiverFormDialog({ isAccepted, disabled = false, onAccept }: WaiverFormDialogProps) {
+  const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
@@ -103,6 +105,15 @@ export default function WaiverFormDialog({ isAccepted, disabled = false, onAccep
       return;
     }
 
+    // The dialog closing is easy to read as "nothing happened" rather than
+    // "this saved" — especially since the only other confirmation is the
+    // trigger button relabeling itself in the background, behind the
+    // closing dialog. A toast makes the save unmissable regardless.
+    showToast({
+      title: "Waiver accepted",
+      description: "You're all set — you can now submit for verification.",
+      variant: "success",
+    });
     setIsOpen(false);
   }
 

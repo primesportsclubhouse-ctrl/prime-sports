@@ -666,6 +666,11 @@ export default function CheckoutClient() {
                 disabled={bookings.length === 0 || isSubmitted}
                 onAccept={handleWaiverAccept}
               />
+              <p className={`mt-2 text-xs ${allWaiversAccepted ? "font-semibold text-success" : "opacity-60"}`}>
+                {allWaiversAccepted
+                  ? ""
+                  : "Required before you can submit for verification."}
+              </p>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-4">

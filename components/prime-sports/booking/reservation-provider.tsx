@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import { operatingHours, SportKey } from "@/lib/prime-sports";
 
@@ -102,11 +102,20 @@ function resolveSessionToken() {
   }
 }
 
-function resolveStoredContact(): ContactDetails | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
+// `contact` is rendered as plain visible text in a few places (checkout's
+// "Booked By" summary, for one) — unlike `resolveSessionToken()` above,
+// reading it via a `useState` lazy initializer would let the client's first
+// hydration render return the real stored value (window exists) while the
+// server render always returns null (no window), producing a genuine
+// text-content hydration mismatch. `useSyncExternalStore` is the hook React
+// ships for exactly this — it forces the client's hydration pass to use
+// `getServerSnapshot` (matching the server), then flips to the real
+// `getSnapshot` value in a follow-up update right after, instead of
+// mismatching the very first paint.
+let cachedContact: ContactDetails | null | undefined;
+const contactListeners = new Set<() => void>();
 
+function readStoredContact(): ContactDetails | null {
   try {
     const stored = window.localStorage.getItem(CONTACT_STORAGE_KEY);
     return stored ? JSON.parse(stored) : null;
@@ -118,8 +127,47 @@ function resolveStoredContact(): ContactDetails | null {
   }
 }
 
+function getContactSnapshot() {
+  // Cached so repeated calls between actual writes return the same
+  // reference — `useSyncExternalStore` re-renders whenever `getSnapshot`
+  // returns a new value, so re-parsing localStorage (a new object every
+  // time) on every call would loop.
+  if (cachedContact === undefined) {
+    cachedContact = readStoredContact();
+  }
+  return cachedContact;
+}
+
+function getServerContactSnapshot(): ContactDetails | null {
+  return null;
+}
+
+function subscribeToContact(onChange: () => void) {
+  contactListeners.add(onChange);
+  return () => {
+    contactListeners.delete(onChange);
+  };
+}
+
+function writeContact(next: ContactDetails | null) {
+  cachedContact = next;
+
+  try {
+    if (next) {
+      window.localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify(next));
+    } else {
+      window.localStorage.removeItem(CONTACT_STORAGE_KEY);
+    }
+  } catch {
+    // Non-fatal — contact still works for the rest of this in-memory
+    // session even if it can't be persisted for a future refresh.
+  }
+
+  contactListeners.forEach((listener) => listener());
+}
+
 export function ReservationProvider({ children }: { children: ReactNode }) {
-  const [contact, setContactState] = useState<ContactDetails | null>(resolveStoredContact);
+  const contact = useSyncExternalStore(subscribeToContact, getContactSnapshot, getServerContactSnapshot);
   const [bookings, setBookings] = useState<BookingLineItem[]>([]);
   const [sessionToken] = useState<string | null>(resolveSessionToken);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -142,12 +190,7 @@ export function ReservationProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (data.contact) {
-        setContactState(data.contact);
-        try {
-          window.localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify(data.contact));
-        } catch {
-          // Non-fatal.
-        }
+        writeContact(data.contact);
       }
 
       if (Array.isArray(data.bookings)) {
@@ -213,13 +256,7 @@ export function ReservationProvider({ children }: { children: ReactNode }) {
   }, [sessionToken, fetchFromServer]);
 
   const setContact = useCallback((next: ContactDetails) => {
-    setContactState(next);
-    try {
-      window.localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // Non-fatal — contact still works for the rest of this in-memory
-      // session even if it can't be persisted for a future refresh.
-    }
+    writeContact(next);
   }, []);
 
   const addBooking = useCallback<ReservationContextValue["addBooking"]>(

@@ -116,13 +116,23 @@ export async function GET(request: NextRequest) {
       .from("rate_cards")
       .select("court_id, day_type, time_of_day, rate_php, effective_from")
       .in("court_id", courtIds),
+    // Only 'pending_payment'/'confirmed' count as "booked" — 'draft'/'held'
+    // is a slot someone has picked but not yet submitted for verification,
+    // which is what the separate `heldKeys` (from slot_holds, below) already
+    // exists to represent. Matching on "not cancelled/no_show" here too would
+    // make 'held' bookings win over `heldKeys` in the priority check further
+    // down (they're created in the same transaction, so one always implies
+    // the other), permanently collapsing "held" into "booked" and making
+    // that branch of the public grid's booked/held/blocked/open display
+    // unreachable — see the 20260817000000 migration for the matching fix
+    // to create_booking_draft() itself.
     supabase
       .from("bookings")
       .select("court_id, booking_date, time_slot")
       .in("court_id", courtIds)
       .gte("booking_date", from)
       .lte("booking_date", to)
-      .not("status", "in", "(cancelled,no_show)"),
+      .in("status", ["pending_payment", "confirmed"]),
     supabase
       .from("slot_holds")
       .select("court_id, booking_date, time_slot")
