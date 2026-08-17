@@ -25,7 +25,7 @@ Two genuinely distinct emails, fired at two different points in the flow:
 
 Both log every attempt (sent/failed/skipped) to `notification_log`, distinguished by `event`.
 
-Requires `RESEND_API_KEY`; `RESEND_FROM_EMAIL` must point at a domain verified in the Resend dashboard, or mail only reaches the account owner's own address (Resend's sandbox restriction).
+Requires `RESEND_API_KEY`; `RESEND_FROM_EMAIL` must point at a domain verified in the Resend dashboard, or mail only reaches the account owner's own address (Resend's sandbox restriction). `RESEND_FROM_EMAIL` is documented as a bare address (e.g. `bookings@primesportsclubhouse.com`); `lib/email.ts`'s `resolveFromHeader()` always wraps it with a `PrimeSports Clubhouse <...>` display name before sending, since a bare address with no display name makes most inboxes (Gmail included) show the raw local-part (`bookings`) as the sender name — no env var changes needed to get a proper sender name.
 
 ## Semaphore — booking confirmation SMS
 

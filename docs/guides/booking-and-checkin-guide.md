@@ -20,9 +20,11 @@ At checkout, the customer:
 
 At this point, the booking is **pending** — a real staff member reviews the receipt before it's confirmed. This is a manual step by design, not an automated instant-confirm.
 
+As soon as the customer submits, they immediately get an email confirming their submission was received and is pending review, listing their court(s), date(s)/time(s), and payment reference. This is just an acknowledgment, not the final confirmation — it lets the customer know their submission genuinely went through instead of leaving them guessing.
+
 ## 3. Confirmation
 
-Once staff approves the payment, the customer receives an email confirming their booking — court, date, time, and price. That same email includes a **"Check in your group"** link.
+Once staff approves the payment, the customer receives a second, separate email confirming their booking — court, date, time, and price. That same email includes a **"Check in your group"** link.
 
 ## 4. Arriving & checking in
 
